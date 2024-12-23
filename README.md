@@ -1,7 +1,7 @@
 <!-- 图片image.png -->
 <div align="center">
   <img src="./img/poster.jpeg" />
-  Draw by AI
+  Drawed by AI
 </div>
 
 <p align="center">
