@@ -79,6 +79,7 @@ p {
 
 * {
     transition: 200ms ease-in-out;
+    /* border: 1px solid rgba(255, 255, 255, 0.2); */
 }
 
 p {
@@ -263,6 +264,9 @@ input.foc {
     filter: brightness(1.2) opacity(0.8);
 }
 
+i{
+    filter: drop-shadow(1px 1px 2px #000000d4);
+}
 
 .buttons {
     display: flex;
@@ -516,11 +520,16 @@ list>span.focs.cl {
     overflow: auto;
 }
 
+#playing-list{
+    border-top: 0.063rem solid var(--text2);
+    border-radius: 0px;
+}
 .playing {
     background-color: var(--hover-b) !important;
 }
 
 .poster {
+    object-fit: cover;
     width: 4em;
     height: 4em;
     border-radius: 10px;
@@ -687,6 +696,7 @@ input.search-music:focus {
 .mica>.content>.player>.cover {
     width: 30%;
     aspect-ratio: 1 / 1;
+    object-fit: cover;
     box-shadow: 0 0 6px 1px var(--sd);
     border-radius: 10px;
 }
@@ -703,6 +713,7 @@ input.search-music:focus {
 .mica>.content>.player>.cover>img {
     width: 100%;
     height: 100%;
+    object-fit: cover;
     border-radius: 10px;
 }
 
@@ -710,7 +721,7 @@ input.search-music:focus {
     padding: 5px 10px 5px 20px;
 }
 
-.hide {
+.content>.hide {
     opacity: 0 !important;
     height: 0 !important;
 }
@@ -737,13 +748,13 @@ input.search-music:focus {
 }
 
 .mica>.content>.search-result {
-    height: 100%;
     display: flex;
     justify-content: flex-start;
     align-items: center;
     flex-wrap: wrap;
     flex-direction: column;
     align-content: center;
+    overflow-x: hidden;
     top: 45px;
     left: 20%;
     right: 20%;
@@ -770,4 +781,8 @@ input.search-music:focus {
     flex-direction: row;
     align-content: flex-start;
     padding: 5px;
+}
+
+.sidebar.hide{
+    transform: translateX(-99%);
 }

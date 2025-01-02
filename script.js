@@ -1,29 +1,37 @@
 // 一些数据
-let ruleslink = "https://api.github.com/repos/NB-blank-space/Music-APIs/contents/Music-APIs.json"
+let ruleslink = "https://api.github.com/repos/NB-blank-space/Music-APIs/contents/Music-APIs.json";
 let rules = {};
-fetch(ruleslink)
-  .then(response => {
-    if (!response.ok) {
-      throw new Error("Failed to fetch file: " + response.status);
-    }
-    return response.json(); 
-  })
-  .then(data => {
-    const base64Content = data.content;
-    const decodedContent = atob(base64Content);
-    rules = JSON.parse(decodedContent);
-  })
-  .catch(error => {
-    console.error("Error:", error);
-  });
 
+// 检查 localStorage 中是否有缓存的数据
+const cachedRules = localStorage.getItem('rules');
+if (cachedRules) {
+  rules = JSON.parse(cachedRules);
+} else {
+  fetch(ruleslink)
+    .then(response => {
+      if (!response.ok) {
+        throw new Error("Failed to fetch file: " + response.status);
+      }
+      return response.json();
+    })
+    .then(data => {
+      const base64Content = data.content;
+      const decodedContent = atob(base64Content);
+      rules = JSON.parse(decodedContent);
+      // 将数据缓存到 localStorage
+      localStorage.setItem('rules', JSON.stringify(rules));
+    })
+    .catch(error => {
+      console.error("Error:", error);
+    });
+}
 
 
 let playlist = [
   {
     title: 'NB Music',
     artist: 'NB-group',
-    audio: 'https://m704.music.126.net/20241220203640/b7f57fde525457adbf34bc66e8cdd796/jdyyaac/obj/w5rDlsOJwrLDjj7CmsOj/35834293548/84df/39f7/2573/e39332fa5dc611211bc76ca2dda5f79b.m4a?vuutv=cLQH5ZJKZVK4gXGjLpRER4Mtc7qwKnwaQmlE4Ukoc2lzYIahH58gfKnhesgOgB4Xrro8FUCpYOSSSK4MfsigKYMEw+5dJe9k8me8GWu8nQU=&authSecret=00000193e3fb09b917b20a3b1dab120f',
+    audio: '',
     poster: './img/NB_Music.png'
   }
 ]
@@ -32,7 +40,7 @@ let love = {
   title: 'NB Music',
   artist: 'NB-group',
   audio: '',
-  poster: './NB_Music.png'
+  poster: './img/NB_Music.png'
 }
 
 let playingNow = 0;
@@ -76,46 +84,196 @@ function next() {
 
 function play() {
   if (audio.paused) {
+    try{
     audio.play();
-    document.querySelector('.player .control .play i').classList="bi bi-pause-circle";
+    document.querySelector('.player .control .play i').classList = "bi bi-pause-circle";
+    }catch(e){
+      document.querySelector('.player .control .play i').classList = "bi bi-play-circle-fill";
+    }
   } else {
     audio.pause();
-    document.querySelector('.player .control .play i').classList="bi bi-play-circle-fill";
+    document.querySelector('.player .control .play i').classList = "bi bi-play-circle-fill";
   }
 }
 
 // END
 
-// 搜索
-function search(event){
+// 音乐相关功能
+function getSongLyrics(name) {
+
+}
+async function search(event) {
   if (event.key === 'Enter') {
     let keyword = document.querySelector('.search input').value;
+    show('.search-result');
+    document.querySelector('.search-result .list').innerHTML = `
+    <div class="loading">
+<svg class="gegga">
+      <defs>
+        <filter id="gegga">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="7" result="blur" />
+          <feColorMatrix
+            in="blur"
+            mode="matrix"
+            values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 20 -10"
+            result="inreGegga"
+          />  
+          <feComposite in="SourceGraphic" in2="inreGegga" operator="atop" />
+        </filter>
+      </defs>
+    </svg>
+<svg class="snurra" width="200" height="200" viewBox="0 0 200 200">
+      <defs>
+        <linearGradient id="linjärGradient">
+          <stop class="stopp1" offset="0" />
+          <stop class="stopp2" offset="1" />
+        </linearGradient>
+        <linearGradient
+          y2="160"
+          x2="160"
+          y1="40"
+          x1="40"
+          gradientUnits="userSpaceOnUse"
+          id="gradient"
+          xlink:href="#linjärGradient"
+        />
+      </defs>
+      <path
+        class="halvan"
+        d="m 164,100 c 0,-35.346224 -28.65378,-64 -64,-64 -35.346224,0 -64,28.653776 -64,64 0,35.34622 28.653776,64 64,64 35.34622,0 64,-26.21502 64,-64 0,-37.784981 -26.92058,-64 -64,-64 -37.079421,0 -65.267479,26.922736 -64,64 1.267479,37.07726 26.703171,65.05317 64,64 37.29683,-1.05317 64,-64 64,-64"
+      />
+      <circle class="strecken" cx="100" cy="100" r="64" />
+    </svg>
+<svg class="skugga" width="200" height="200" viewBox="0 0 200 200">
+      <path
+        class="halvan"
+        d="m 164,100 c 0,-35.346224 -28.65378,-64 -64,-64 -35.346224,0 -64,28.653776 -64,64 0,35.34622 28.653776,64 64,64 35.34622,0 64,-26.21502 64,-64 0,-37.784981 -26.92058,-64 -64,-64 -37.079421,0 -65.267479,26.922736 -64,64 1.267479,37.07726 26.703171,65.05317 64,64 37.29683,-1.05317 64,-64 64,-64"
+      />
+      <circle class="strecken" cx="100" cy="100" r="64" />
+    </svg>
+    <style>
+    .loading {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+      width: 100%;
+    height: 100%;
+}
+.loading>.gegga {
+  width: 0;
+}
+.snurra {
+  filter: url(#gegga);
+}
+.stopp1 {
+  stop-color: var(--theme-1);
+}
+.stopp2 {
+  stop-color: var(--theme-2);
+}
+.halvan {
+  animation: Snurra1 10s infinite linear;
+  stroke-dasharray: 180 800;
+  fill: none;
+  stroke: url(#gradient);
+  stroke-width: 23;
+  stroke-linecap: round;
+}
+.strecken {
+  animation: Snurra1 3s infinite linear;
+  stroke-dasharray: 26 54;
+  fill: none;
+  stroke: url(#gradient);
+  stroke-width: 23;
+  stroke-linecap: round;
+}
+.skugga {
+  filter: blur(5px);
+  opacity: 0.3;
+  position: absolute;
+  transform: translate(3px, 3px);
+}
+@keyframes Snurra1 {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -403px;
+  }
+}
+
+    </style>
+  </div>
+    `;
     if (keyword) {
       let searchRules = rules['Search rules'];
-      // {
-      //   "Search rules":[
-      //     {
-      //      "Wangyi Cloud": "
-      //      function(keyword){
-      //      
-      //       }"
-      //     }
-      //   ]
-      // }
       let searchResults = [];
       for (let i = 0; i < searchRules.length; i++) {
+        let rule = searchRules[i][Object.keys(searchRules[i])[0]];
+        eval(rule.join('\n'));
+        let res = await main(keyword);
+        res.source = Object.keys(searchRules[i])[0];
+        searchResults.push(res);
       }
+      let list = document.querySelector('.search-result .list');
+      list.innerHTML = '';
+      searchResults.forEach((source, index) => {
+        source.forEach((song, index) => {
+          let div = document.createElement('div');
+          div.classList.add('song');
+          div.innerHTML = '<img class="poster" alt="Poster image"><div class="info"><div class="name"></div><div class="artist"></div></div><div class="controls"><div class="love" onclick="love()"><i class="bi bi-heart"></i></div><div class="play" onclick="play()"><i class="bi bi-play-circle"></i></div><div class="add2list" onclick="add2list()"><i class="bi bi-plus-circle"></i></div></div>';
+          div.querySelector('.poster').src = "https:" + song.pic;
+          div.querySelector('.name').textContent = song.title.replace(/<em class="keyword">|<\/em>/g, '');
+          div.querySelector('.artist').textContent = song.artist;
+          div.addEventListener('click', async () => {
+            if (playlist.find((item) => item.title == song.title.replace(/<em class="keyword">|<\/em>/g, ''))) {
+              return;
+            }
+            let urlrules = rules["Music link"];
+            let urlrule = urlrules.find((item) => {
+              return Object.keys(item)[0] == source.source;
+            });
+            eval(urlrule[source.source].join('\n'));
+            let urls = await main(song.bvid);
+            // 向url[0]发送get请求，检查是否403，决定url = url[0]还是url[1]。
+            let url = urls[0];
+            try {
+              let res = await fetch(url);
+              if (res.status == 403) {
+                url = urls[1];
+              }
+            } catch (error) {
+              url = urls[1];
+            }
 
+            playlist.push({ title: song.title.replace(/<em class="keyword">|<\/em>/g, ''), artist: song.artist, audio: url, poster: "https:" + song.pic });
+            setPlayingNow(playlist.length - 1);
+            renderPlaylist();
+            document.querySelector('.player').click();
+          });
+          list.appendChild(div);
+        });
+      });
       document.querySelector('#function-list span').style.display = 'none';
       document.querySelector('.search input').value = '';
       document.querySelector('.search input').blur();
-      show('.search-result');
     }
   }
 }
 
 // 页面渲染
-function setPlayingNow(index) {
+// 当点击除了sidebar以外的位置时，sidebar会收起
+document.addEventListener('click', (event) => {
+  if (!event.target.closest('.sidebar') && !event.target.closest('.dock.sidebar')) {
+    document.querySelector('.sidebar').classList.add('hide');
+  }
+});
+document.querySelector('.sidebar').addEventListener('mouseover', () => {
+  document.querySelector('.sidebar').classList.remove('hide');
+});
+
+async function setPlayingNow(index) {
   playingNow = index;
   document.documentElement.style.setProperty('--bgul', 'url(' + playlist[playingNow].poster + ')');
   document.querySelector('.cover-img').src = playlist[playingNow].poster;
@@ -128,7 +286,12 @@ function setPlayingNow(index) {
   }
   songs[playingNow].classList.add('playing');
   audio.src = playlist[playingNow].audio;
-  audio.play();
+  try {
+    await audio.play();
+    document.querySelector('.player .control .play i').classList = "bi bi-pause-circle";
+  } catch (error) {
+    document.querySelector('.player .control .play i').classList = "bi bi-play-circle-fill";
+  }
 }
 
 function renderPlaylist() {
@@ -167,7 +330,10 @@ function show(name) {
     checks[i].classList.remove('check');
   }
   document.querySelector('.content ' + name).classList.remove('hide');
-  document.querySelector('#function-list ' + name).classList.add('check');
+  try {
+    document.querySelector('#function-list ' + name).classList.add('check');
+  }catch(e){
+  }
 }
 
 let isDark = localStorage.getItem('theme') == 'dark';
@@ -181,15 +347,11 @@ function toggletheme() {
   document.documentElement.classList.toggle('dark');
 
   if (document.documentElement.classList.contains('dark')) {
-    document.querySelector('.window.whiteboard>.titbar>p').textContent = 'Blackboard';
     setData('theme', 'dark');
     isDark = true;
-    darkControl.classList.add('active');
   } else {
-    document.querySelector('.window.whiteboard>.titbar>p').textContent = 'Whiteboard';
     setData('theme', 'light');
     isDark = false;
-    darkControl.classList.remove('active');
   }
 }
 // END

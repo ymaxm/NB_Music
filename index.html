@@ -4,7 +4,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NB_Music</title>
+  <title>NB Music</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-md5/2.19.0/js/md5.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <link rel="stylesheet" href="./style.css" />
 </head>
 <div class="mica">
@@ -53,7 +55,7 @@
   <div class="search">
     <input class="input search-music" type="text" placeholder="搜索音乐"  onkeydown="search(event)"/>
   </div>
-  <div class="sidebar">
+  <div class="sidebar hide">
     <list class="list focs" id="function-list">
       <a class="player check" onclick="show('.player')"><i class="bi bi-music-player"></i>&nbsp;播放</a>
       <a class="love" onclick="show('.love')"><i class="bi bi-heart"></i>&nbsp;收藏</a>
@@ -62,7 +64,6 @@
     </list>
     <div class="playing-list">
       <div id="listname" style="padding: 2px 20px;">默认歌单</div>
-      <hr style="margin: 0px;">
       <list class="list" id="playing-list">
         <div class="song">
           <img class="poster" alt="Poster image">
@@ -75,7 +76,7 @@
   <div class="content">
     <div class="player">
       <div class="cover">
-        <img class="cover-img" src="NB_Music.png" alt="cover" />
+        <img class="cover-img" src="./img/NB_Music.png" alt="cover" />
       </div>
       <div class="info">
         <div class="title">歌曲名</div>
@@ -115,7 +116,7 @@
       <div class="title">搜索结果</div>
       <list class="list">
         <div class="song">
-          <img class="poster" alt="Poster image" src="NB_Music.png" />
+          <img class="poster" alt="Poster image" src="./img/NB_Music.png" />
           <div class="info">
             <div class="name">NB</div>
             <div class="artist">NB</div>
