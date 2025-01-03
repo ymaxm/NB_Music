@@ -93,7 +93,7 @@ html {
 }
 
 body {
-    background: var(--bgul)
+    background: var(--bgul);
     background-size: cover;
     height: 100%;
     font-size: 15.5px;
