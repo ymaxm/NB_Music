@@ -13,7 +13,7 @@
     --hover-b: #1111110f;
     --bggrey: #ddd;
     --fill: #d3d3d370;
-    --bgul: url('');
+    --bgul: url();
     --mm: #ffffffc0;
     --cm: #fafafa00;
     --bar: #efefef37;
@@ -41,7 +41,7 @@
     --hover-b: #eeeeee0f;
     --bggrey: #444;
     --fill: #54545470;
-    --bgul: url('');
+    --bgul: url();
     --mm: #ffffff50;
     --cm: #252525bb;
     --bar: #7272722a;
@@ -93,7 +93,7 @@ html {
 }
 
 body {
-    background: var(--bgul) center;
+    background: var(--bgul);
     background-size: cover;
     height: 100%;
     font-size: 15.5px;
