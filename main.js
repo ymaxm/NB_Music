@@ -31,8 +31,8 @@ function createWindow() {
             webSecurity: false  // 禁用同源策略,允许跨域
         }
     })
-    win.webContents.openDevTools()
-    win.loadFile('index.html')
+    // win.webContents.openDevTools()
+    win.loadFile('main.html')
     ipcMain.on('window-minimize', () => {
         win.minimize()
     })
