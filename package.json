@@ -1,0 +1,41 @@
+{
+  "name": "nb_music",
+  "version": "0.1.0",
+  "description": "<!-- 图片image.png -->\r <div align=\"center\">\r   <img src=\"./img/poster.jpeg\" />\r   Drawed by AI\r </div>",
+  "main": "main.js",
+  "scripts": {
+    "build": "electron-builder build",
+    "run": "electron ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^33.3.1",
+    "electron-builder": "^25.1.8"
+  },
+  "dependencies": {
+    "NeteaseCloudMusicApi": "^4.25.0",
+    "axios": "^1.7.9",
+    "md5": "^2.3.0"
+  },
+  "build": {
+    "appId": "com.nbgroup.nbmusic",
+    "productName": "NB Music",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "icon": "icons/icon.ico",
+      "target": ["nsis", "zip"]
+    },
+    "mac": {
+      "icon": "icons/icon.icns",
+      "target": ["dmg", "zip"]
+    },
+    "linux": {
+      "icon": "icons/icon.png",
+      "target": ["AppImage", "deb"]
+    }
+  }
+}
