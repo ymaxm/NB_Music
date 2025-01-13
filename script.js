@@ -2,9 +2,69 @@ const axios = require("axios");
 const md5 = require("md5");
 const { lyric_new, search } = require(`NeteaseCloudMusicApi`);
 const { ipcRenderer } = require('electron')
+const minimizeBtn = document.getElementById('maximize');
+
+// 初始状态
+let isMaximized = false;
+
+// 监听窗口状态变化
+ipcRenderer.on('window-state-changed', (event, maximized) => {
+  isMaximized = maximized;-
+  updateMinimizeIcon();
+});
+
+function createObservableArray(callback) {
+  // 定义数组操作的处理器
+  const handler = {
+    // 监听数组项的修改
+    set(target, property, value) {
+      const oldValue = target[property];
+      target[property] = value;
+      // 触发回调
+      callback({
+        type: 'set',
+        property,
+        oldValue,
+        newValue: value
+      });
+      return true;
+    },
+
+    // 监听数组方法调用
+    get(target, property) {
+      const value = target[property];
+      if (typeof value === 'function') {
+        return function (...args) {
+          const oldLength = target.length;
+          const result = value.apply(target, args);
+          // 触发回调
+          callback({
+            type: 'method',
+            method: property,
+            args,
+            oldLength,
+            newLength: target.length
+          });
+          return result;
+        }
+      }
+      return value;
+    }
+  };
+
+  // 返回代理后的数组
+  return new Proxy([], handler);
+}
+function updateMinimizeIcon() {
+  if (isMaximized) {
+    minimizeBtn.innerHTML = `<svg version="1.1" width="12" height="12" viewBox="0,0,37.65105,35.84556" style="margin-top:4px;"><g transform="translate(-221.17804,-161.33903)"><g style="stroke:var(--text);" data-paper-data="{&quot;isPaintingLayer&quot;:true}" fill="none" fill-rule="nonzero" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="10" stroke-dasharray="" stroke-dashoffset="0"><path d="M224.68734,195.6846c-2.07955,-2.10903 -2.00902,-6.3576 -2.00902,-6.3576l0,-13.72831c0,0 -0.23986,-1.64534 2.00902,-4.69202c1.97975,-2.68208 4.91067,-2.00902 4.91067,-2.00902h14.06315c0,0 3.77086,-0.23314 5.80411,1.67418c2.03325,1.90732 1.33935,5.02685 1.33935,5.02685v13.39347c0,0 0.74377,4.01543 -1.33935,6.3576c-2.08312,2.34217 -5.80411,1.67418 -5.80411,1.67418h-13.39347c0,0 -3.50079,0.76968 -5.58035,-1.33935z"></path><path d="M229.7952,162.85325h16.06111c0,0 5.96092,-0.36854 9.17505,2.64653c3.21412,3.01506 2.11723,7.94638 2.11723,7.94638v18.55642"></path></g></g></svg>`;
+  } else {
+    minimizeBtn.innerHTML = `<i class="bi bi-app"></i>`;
+  }
+}
 
 // 定义通用cookie
-const COOKIE = 'buvid3=345D266D-19E4-1EEC-C9A7-B9286BA4A59239219infoc; b_nut=1736343139; b_lsid=6D51106107_194461DD0EA; _uuid=78482A2E-DDA8-6105B-D153-31644B61E4BA46742infoc; enable_web_push=DISABLE; buvid_fp=5857ee8e41c5baf5b68bc8aa557dba82; bmg_af_switch=0; buvid4=AFBA85E9-5DE9-5A3E-86F5-7390969CA3F256236-025010813-GdU%2F9LbW2GGlexArjkUUO07Mrv500PA9IZIciasB8SaOP7lEgvVgG0Ha4LbGI%2FyK; bili_ticket=eyJhbGciOiJIUzI1NiIsImtpZCI6InMwMyIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MzY2MDIzNTYsImlhdCI6MTczNjM0MzA5NiwicGx0IjotMX0.kDhXWhwKZZsjH4b3OD9DqQ2E5fx-ARS4tno7o9KJnr8; bili_ticket_expires=1736602296; CURRENT_FNVAL=2000; sid=6802awhl; home_feed_column=4; browser_resolution=825-927';
+const COOKIE = 'buvid3=A1623A10-442C-B2ED-9C88-0CCC5CD1FE0884154infoc; b_nut=1736584584; b_lsid=B2C57391_1945481E3EE; _uuid=1042C4A56-952D-D819-810AD-DAFC9A3E410B886233infoc; enable_web_push=DISABLE; buvid_fp=5857ee8e41c5baf5b68bc8aa557dba82; buvid4=03DC0752-2BEA-865B-7A56-9F721E024E1688454-025011108-0lKJqwtJRGBuwNvSg1OGSA%3D%3D; bmg_af_switch=1; bmg_src_def_domain=i1.hdslb.com; CURRENT_FNVAL=2000; home_feed_column=4; browser_resolution=1009-927; sid=87j1to30; bili_ticket=eyJhbGciOiJIUzI1NiIsImtpZCI6InMwMyIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MzY4NDM3OTIsImlhdCI6MTczNjU4NDUzMiwicGx0IjotMX0.5RyEPN1jDBaBbnQR7yK-1wOHTN26dJ68EGnmfamK8-w; bili_ticket_expires=1736843732';
 
 async function getBuvidValues() {
   return COOKIE; // 不能用在生产环境
@@ -18,13 +78,13 @@ async function searchBilibiliVideo(keyword, search_type = "video", page = 1, ord
     27, 43, 5, 49, 33, 9, 42, 19, 29, 28, 14, 39, 12, 38, 41, 13,
     37, 48, 7, 16, 24, 55, 40, 61, 26, 17, 0, 1, 60, 51, 30, 4,
     22, 25, 54, 21, 56, 59, 6, 63, 57, 62, 11, 36, 20, 34, 44, 52,
-];
-  
+  ];
+
   function getMixinKey(orig) {
-      return mixinKeyEncTab
-          .map((n) => orig[n])
-          .join("")
-          .slice(0, 32);
+    return mixinKeyEncTab
+      .map((n) => orig[n])
+      .join("")
+      .slice(0, 32);
   }
 
   function encWbi(params, imgKey, subKey) {
@@ -459,12 +519,49 @@ let playlist = [
   },
 ];
 let playlistName = "默认歌单";
-let love = {
-  title: "NB Music",
-  artist: "NB-group",
-  audio: "",
-  poster: "./img/NB_Music.png",
-};
+let lovelist = createObservableArray((change) => {
+  const listElement = document.querySelector("#lovelist");
+  switch (change.type) {
+    case "set":
+      break;
+    case "method":
+      if (change.method === "push" || change.method === "unshift" || change.method === "splice") {
+        listElement.innerHTML = "";
+        lovelist.forEach((item, index) => {
+          const div = document.createElement("div");
+          div.classList.add("song");
+          div.id = index;
+          div.innerHTML = `
+            <img class="poster" alt="Poster image">
+            <div class="info">
+              <div class="name"></div>
+              <div class="artist"></div>
+            </div>
+            <div class="controls">
+              <div class="love loved" onclick="unlove_song(${index},event)">
+                <i class="bi bi-heart-fill"></i>
+              </div>
+            </div>`;
+          div.querySelector(".poster").src = item.poster;
+          div.querySelector(".name").textContent = item.title;
+          div.querySelector(".artist").textContent = item.artist;
+          div.addEventListener("click", () => {
+            //如果在播放列表中找到了这首歌
+            if (playlist.some(song => JSON.stringify(song) === JSON.stringify(item))) {
+              setPlayingNow(playlist.findIndex(song => JSON.stringify(song) === JSON.stringify(item)));
+            }
+            else {
+              playlist.push(item);
+              setPlayingNow(playlist.length - 1);
+              renderPlaylist();
+            }
+          });
+          listElement.appendChild(div);
+        });
+      }
+      break;
+  }
+});
 
 let playingNow = 0;
 //END
@@ -474,27 +571,32 @@ function changePlaylistName(name) {
   renderPlaylist();
 }
 
-async function setPlayingNow(index) {
+async function setPlayingNow(index, replay = true) {
   player.changeLyrics(playlist[index].lyric);
   playingNow = index;
   document.documentElement.style.setProperty(
     "--bgul",
     "url(" + playlist[playingNow].poster + ")"
   );
-  document.querySelector(".player-content .cover .cover-img").src = playlist[playingNow].poster;
+  document.querySelector(".player-content .cover .cover-img").src =
+    playlist[playingNow].poster;
   document.querySelector(".player .info .title").textContent =
     playlist[playingNow].title;
   document.querySelector(".player .info .artist").textContent =
     playlist[playingNow].artist;
-  document.querySelector(
-    ".player .control .progress .progress-bar .progress-bar-inner"
-  ).style.width = "0%";
+
+  if (replay) {
+    document.querySelector(".player .control .progress .progress-bar .progress-bar-inner").style.width = "0%";
+    audio.currentTime = 0;
+  }
+
   let songs = document.querySelectorAll(".list .song");
   for (let i = 0; i < songs.length; i++) {
     songs[i].classList.remove("playing");
   }
   songs[playingNow].classList.add("playing");
   audio.src = playlist[playingNow].audio;
+
   try {
     await audio.play();
     document.querySelector(".player .control .play i").classList =
@@ -503,25 +605,47 @@ async function setPlayingNow(index) {
     document.querySelector(".player .control .play i").classList =
       "bi bi-play-circle-fill";
   }
-  localStorage.setItem('nbmusic_playlist', JSON.stringify(playlist));
+  localStorage.setItem("nbmusic_playlist", JSON.stringify(playlist));
 }
 
-function delete_song(index) {
+function love_song(index, event) {
+  event.stopPropagation();
+  song = playlist[index];
+  lovelist.push(song);
+  document.querySelector(`[id="${index}"] .controls .love`).innerHTML = `<i class="bi bi-heart-fill"></i>`;
+  document.querySelector(`[id="${index}"]  .controls .love i`).classList.add("loved");
+  document.querySelector(`[id="${index}"]  .controls .love`).setAttribute("onclick", `unlove_song(${index},event)`);
+}
+function unlove_song(index, event) {
+  event.stopPropagation();
+  song = playlist[index];
+  lovelist = lovelist.filter((item) => item.title != song.title);
+  document.querySelector(`[id="${index}"] .controls .love`).innerHTML = `<i class="bi bi-heart"></i>`;
+  document.querySelector(`[id="${index}"]  .controls .love i`).classList.remove("loved");
+  document.querySelector(`[id="${index}"]  .controls .love`).setAttribute("onclick", `love_song(${index},event)`);
+}
+function delete_song(index, event) {
+  event.stopPropagation();
   document.querySelector(`#playing-list [id="${index}"]`)?.remove();
 
   playlist.splice(index, 1);
-  if (index == playingNow) {
-    if (index == playlist.length) {
-      setPlayingNow(0);
-    } else {
-      setPlayingNow(index);
-    }
-  } else if (index < playingNow) {
+  if (index < playingNow) {
     setPlayingNow(playingNow - 1);
   }
-  setTimeout(() => {
-    renderPlaylist();
-  }, 1000);
+  if (index === playingNow) {
+    setPlayingNow(playingNow);
+  }
+  renderPlaylist();
+}
+function extractBracketContent(text) {
+  //【】，[]，（）,()，《》,「」
+  const bracketRegex = /[【\[\(（《「]([^】\]\)）》」]+)[】\]\)）》」]/g;
+  const matches = Array.from(text.matchAll(bracketRegex));
+  if (matches.length === 0) {
+    return text;
+  }
+  const contents = matches.map(match => match[1]);
+  return contents.join('\n');
 }
 function renderPlaylist() {
   document.querySelector("#listname").textContent = playlistName;
@@ -531,6 +655,7 @@ function renderPlaylist() {
     let div = document.createElement("div");
     div.classList.add("song");
     div.id = index;
+    let ifloved = lovelist.some(item => JSON.stringify(item) === JSON.stringify(song));
     div.innerHTML =
       `<img class="poster" alt="Poster image">
       <div class="info">
@@ -538,10 +663,11 @@ function renderPlaylist() {
         <div class="artist"></div>
       </div>
       <div class="controls">
-        <div class="delete" onclick="delete_song(${index})"><i class="bi bi-trash"></i></div>
+        <div class="love ${!ifloved ? "loved" : ""}" onclick="love_song(${index},event)">${(ifloved ? `<i class="bi bi-heart-fill" class="loved"></i>` : `<i class="bi bi-heart"></i>`)}</div>
+        <div class="delete" onclick="delete_song(${index},event)"><i class="bi bi-trash"></i></div>
       </div>`;
     div.querySelector(".poster").src = song.poster;
-    div.querySelector(".name").textContent = song.title;
+    div.querySelector(".name").textContent = extractBracketContent(song.title);
     div.querySelector(".artist").textContent = song.artist;
     div.addEventListener("click", () => {
       setPlayingNow(index);
@@ -728,7 +854,7 @@ transform: translate(3px, 3px);
       let searchResults = await searchBilibiliVideo(keyword);
       let list = document.querySelector(".search-result .list");
       list.innerHTML = "";
-      searchResults.forEach((song,index) => {
+      searchResults.forEach((song, index) => {
         let div = document.createElement("div");
         div.classList.add("song");
         div.innerHTML =
@@ -795,15 +921,15 @@ document.addEventListener("DOMContentLoaded", function () {
   document.getElementById('minimize').addEventListener('click', () => {
     ipcRenderer.send('window-minimize')
   })
-  
+
   document.getElementById('maximize').addEventListener('click', () => {
-    ipcRenderer.send('window-maximize') 
+    ipcRenderer.send('window-maximize')
   })
-  
+
   document.getElementById('close').addEventListener('click', () => {
     ipcRenderer.send('window-close')
   })
-  
+
   setTimeout(() => {
     document.querySelector(".loading").style.opacity = "0";
   }, 1000);

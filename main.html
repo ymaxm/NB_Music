@@ -72,7 +72,7 @@
     <div class="search">
       <input class="input search-music" type="text" placeholder="搜索音乐" onkeydown="search_music(event)" />
     </div>
-    <div class="sidebar hide">
+    <div class="sidebar">
       <list class="list focs" id="function-list">
         <a class="player check" onclick="show('.player')"><i class="bi bi-music-player"></i>&nbsp;播放</a>
         <a class="love" onclick="show('.love')"><i class="bi bi-heart"></i>&nbsp;收藏</a>
@@ -88,7 +88,8 @@
             <div class="artist"></div>
           </div>
           <div class="controls">
-            <div class="delete" onclick="delete_song(id)"><i class="bi bi-trash"></i></div>
+            <div class="love" onclick="love_song(id,event)"><i class="bi bi-heart"></i></div>
+            <div class="delete" onclick="delete_song(id,event)"><i class="bi bi-trash"></i></div>
           </div>
         </list>
       </div>
@@ -126,12 +127,7 @@
       </div>
       <div class="love hide">
         <div class="title">收藏</div>
-        <list class="list">
-          <div class="info">
-            <img class="poster" alt="Poster image">
-            <div class="name"></div>
-            <div class="artist"></div>
-          </div>
+        <list id="lovelist"class="list">
         </list>
       </div>
       <div class="music-list hide"></div>

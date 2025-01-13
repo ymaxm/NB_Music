@@ -17,7 +17,8 @@
   "dependencies": {
     "NeteaseCloudMusicApi": "^4.25.0",
     "axios": "^1.7.9",
-    "md5": "^2.3.0"
+    "md5": "^2.3.0",
+    "puppeteer": "^24.0.0"
   },
   "build": {
     "appId": "com.nbgroup.nbmusic",
@@ -27,15 +28,24 @@
     },
     "win": {
       "icon": "icons/icon.ico",
-      "target": ["nsis", "zip"]
+      "target": [
+        "nsis",
+        "zip"
+      ]
     },
     "mac": {
       "icon": "icons/icon.icns",
-      "target": ["dmg", "zip"]
+      "target": [
+        "dmg",
+        "zip"
+      ]
     },
     "linux": {
       "icon": "icons/icon.png",
-      "target": ["AppImage", "deb"]
+      "target": [
+        "AppImage",
+        "deb"
+      ]
     }
   }
 }
