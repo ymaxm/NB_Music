@@ -99,8 +99,11 @@ class PlaylistManager {
         this.uiManager = uiManager;
     }
 
-    addSong(song) {
+    addSong(song, event) {
         try {
+            if (event) {
+                event.stopPropagation(); // 阻止事件冒泡
+            }
             this.playlist.push(song);
             this.savePlaylists();
         } catch (error) {
@@ -108,8 +111,11 @@ class PlaylistManager {
         }
     }
 
-    removeSong(index) {
+    removeSong(index, event) {
         try {
+            if (event) {
+                event.stopPropagation(); // 阻止事件冒泡
+            }
             this.playlist.splice(index, 1);
             this.savePlaylists();
             // 如果删除的是当前播放的歌曲
@@ -125,6 +131,7 @@ class PlaylistManager {
 
     async setPlayingNow(index, replay = true) {
         try {
+
             if (index < 0 || index >= this.playlist.length) {
                 throw new Error("无效的播放索引");
             }
@@ -313,13 +320,87 @@ class MusicSearcher {
     constructor() {
         this.COOKIE = ``;
     }
+    async searchBilibiliVideo(keyword, search_type = "video", page = 1, order = "totalrank", duration = 0, tids = 0) {
+        const mixinKeyEncTab = [
+            46, 47, 18, 2, 53, 8, 23, 32, 15, 50, 10, 31, 58, 3, 45, 35,
+            27, 43, 5, 49, 33, 9, 42, 19, 29, 28, 14, 39, 12, 38, 41, 13,
+            37, 48, 7, 16, 24, 55, 40, 61, 26, 17, 0, 1, 60, 51, 30, 4,
+            22, 25, 54, 21, 56, 59, 6, 63, 57, 62, 11, 36, 20, 34, 44, 52,
+        ];
 
-    async search_music(event) {
-        if (event.key === "Enter") {
-            let keyword = document.querySelector(".search input").value;
-            show(".search-result");
-            document.querySelector(".search-result .list").innerHTML = `
-      <div class="loading">
+        function getMixinKey(orig) {
+            return mixinKeyEncTab
+                .map((n) => orig[n])
+                .join("")
+                .slice(0, 32);
+        }
+
+        function encWbi(params, imgKey, subKey) {
+            const mixinKey = getMixinKey(imgKey + subKey);
+            const currTime = Math.round(Date.now() / 1000);
+            const chrFilter = /[!'()*]/g;
+
+            params.wts = currTime;
+
+            const query = Object.keys(params)
+                .sort()
+                .map((key) => {
+                    const value = params[key].toString().replace(chrFilter, "");
+                    return `${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
+                })
+                .join("&");
+
+            const wbiSign = md5(query + mixinKey);
+            return `${query}&w_rid=${wbiSign}`;
+        }
+
+        async function getWbiKeys() {
+            const response = await axios.get("https://api.bilibili.com/x/web-interface/nav");
+            const { wbi_img: { img_url, sub_url } } = response.data.data;
+
+            return {
+                img_key: img_url.slice(img_url.lastIndexOf("/") + 1, img_url.lastIndexOf(".")),
+                sub_key: sub_url.slice(sub_url.lastIndexOf("/") + 1, sub_url.lastIndexOf("."))
+            };
+        }
+
+        try {
+            const { img_key, sub_key } = await getWbiKeys();
+            const params = {
+                search_type: "video",
+                keyword,
+                order,
+                duration,
+                tids,
+                page,
+            };
+            const query = encWbi(params, img_key, sub_key);
+
+            const response = await axios.get(`https://api.bilibili.com/x/web-interface/wbi/search/type?${query}`);
+
+            if (response.data.code !== 0) {
+                throw new Error(response.data.message || '搜索失败');
+            }
+
+            return response.data.data.result || [];
+
+        } catch (error) {
+            console.error("搜索B站视频失败:", error);
+            throw error;
+        }
+    }
+    async search_music(keyword) {
+        if (!keyword) return;
+
+        try {
+            const self = this;
+
+            // 显示搜索结果区域
+            this.uiManager.show(".search-result");
+            const list = document.querySelector(".search-result .list");
+
+            // 显示加载动画
+            list.innerHTML = `<div class="loading">
     <svg class="gegga">
         <defs>
           <filter id="gegga">
@@ -416,63 +497,94 @@ class MusicSearcher {
     }
     
       </style>
-    </div>
-      `;
-            if (keyword) {
-                let searchResults = await searchBilibiliVideo(keyword);
-                let list = document.querySelector(".search-result .list");
-                list.innerHTML = "";
-                searchResults.forEach((song, index) => {
-                    let div = document.createElement("div");
-                    div.classList.add("song");
-                    div.innerHTML =
-                        '<img class="poster" alt="Poster image"><div class="info"><div class="name"></div><div class="artist"></div></div><div class="controls"><div class="love" onclick="love()"><i class="bi bi-heart"></i></div><div class="play" onclick="play()"><i class="bi bi-play-circle"></i></div><div class="add2list" onclick="add2list()"><i class="bi bi-plus-circle"></i></div></div>';
-                    div.querySelector(".poster").src = "https:" + song.pic;
-                    div.querySelector(".name").textContent = song.title.replace(
-                        /<em class="keyword">|<\/em>/g,
-                        ""
-                    );
-                    div.querySelector(".artist").textContent = song.artist;
-                    div.addEventListener("click", async () => {
-                        if (
-                            playlist.find(
-                                (item) =>
-                                    item.title ==
-                                    song.title.replace(/<em class="keyword">|<\/em>/g, "")
-                            )
-                        ) {
+    </div>`;
+
+            // 搜索处理
+            const searchResults = await this.searchBilibiliVideo(keyword);
+            list.innerHTML = "";
+
+            searchResults.forEach((song, index) => {
+                const div = document.createElement("div");
+                div.classList.add("song");
+
+                // 使用模板字符串替代内联事件
+                div.innerHTML = `
+                    <img class="poster" alt="Poster image">
+                    <div class="info">
+                        <div class="name"></div>
+                        <div class="artist"></div>
+                    </div>
+                    <div class="controls">
+                        <div class="love">
+                            <i class="bi bi-heart"></i>
+                        </div>
+                        <div class="play">
+                            <i class="bi bi-play-circle"></i>
+                        </div>
+                        <div class="add2list">
+                            <i class="bi bi-plus-circle"></i>
+                        </div>
+                    </div>`;
+
+                const cleanTitle = song.title.replace(/<em class="keyword">|<\/em>/g, "");
+                div.querySelector(".poster").src = "https:" + song.pic;
+                div.querySelector(".name").textContent = cleanTitle;
+                div.querySelector(".artist").textContent = song.artist;
+
+                // 点击事件处理
+                div.addEventListener("click", async () => {
+                    try {
+                        // 检查是否已存在
+                        if (self.playlistManager.playlist.find(item => item.title === cleanTitle)) {
                             return;
                         }
-                        let urls = await getAudioLink(song.bvid, true);
-                        // 向url[0]发送get请求，检查是否403，决定url = url[0]还是url[1]。
+
+                        // 获取音频链接
+                        const urls = await self.getAudioLink(song.bvid, true);
                         let url = urls[0];
+
+                        // 检查链接可用性
                         try {
-                            let res = await axios.get(url);
-                            if (res.status == 403) {
+                            const res = await axios.get(url);
+                            if (res.status === 403) {
                                 url = urls[1];
                             }
                         } catch (error) {
                             url = urls[1];
                         }
 
-                        playlist.push({
-                            title: song.title.replace(/<em class="keyword">|<\/em>/g, ""),
+                        // 创建新歌曲对象
+                        const newSong = {
+                            title: cleanTitle,
                             artist: song.artist,
                             audio: url,
                             poster: "https:" + song.pic,
-                            lyric: await getLyrics(keyword),
-                        });
+                            lyric: await self.getLyrics(keyword)
+                        };
 
-                        setPlayingNow(playlist.length - 1);
-                        renderPlaylist();
-                        document.querySelector(".player").click();
-                    });
-                    list.appendChild(div);
+                        // 添加到播放列表并播放
+                        self.playlistManager.addSong(newSong);
+                        self.playlistManager.setPlayingNow(self.playlistManager.playlist.length - 1);
+                        self.uiManager.renderPlaylist();
+                        self.uiManager.show(".player");
+
+                    } catch (error) {
+                        console.error("添加歌曲失败:", error);
+                    }
                 });
-                document.querySelector("#function-list span").style.display = "none";
-                document.querySelector(".search input").value = "";
-                document.querySelector(".search input").blur();
-            }
+
+                list.appendChild(div);
+            });
+
+            // 清理搜索框
+            document.querySelector("#function-list span").style.display = "none";
+            document.querySelector(".search input").value = "";
+            document.querySelector(".search input").blur();
+
+        } catch (error) {
+            console.error("搜索失败:", error);
+            const list = document.querySelector(".search-result .list");
+            list.innerHTML = "搜索失败，请重试";
         }
     }
 
@@ -806,9 +918,60 @@ class UIManager {
         this.playlistManager = playlistManager;
         this.favoriteManager = favoriteManager;
         this.musicSearcher = musicSearcher;
+        this.isMaximized = false;
 
         this.initializeEvents();
+        this.initializePlayerControls();
+        this.initializePageEvents();
     }
+
+    initializePlayerControls() {
+        // 进度条控制
+        const progressBar = document.querySelector('.progress-bar');
+        progressBar?.addEventListener('click', (e) => {
+            const rect = progressBar.getBoundingClientRect();
+            const percent = (e.clientX - rect.left) / rect.width;
+            this.audioPlayer.audio.currentTime = percent * this.audioPlayer.audio.duration;
+        });
+
+        // 播放时更新进度条
+        this.audioPlayer.audio.addEventListener('timeupdate', () => {
+            const progress = (this.audioPlayer.audio.currentTime / this.audioPlayer.audio.duration) * 100;
+            document.querySelector('.progress-bar-inner').style.width = `${progress}%`;
+        });
+
+        // 播放控制按钮（使用事件委托）
+        const buttonsContainer = document.querySelector('.buttons');
+        buttonsContainer?.addEventListener('click', (e) => {
+            const button = e.target.closest('[data-action]');
+            if (!button) return;
+
+            const action = button.dataset.action;
+            switch (action) {
+                case 'play':
+                    this.audioPlayer.play();
+                    break;
+                case 'prev':
+                    this.audioPlayer.prev();
+                    break;
+                case 'next':
+                    this.audioPlayer.next();
+                    break;
+            }
+        });
+
+        // 播放状态图标更新
+        this.audioPlayer.audio.addEventListener('play', () => {
+            document.querySelector('.play i').classList.remove('bi-play-circle-fill');
+            document.querySelector('.play i').classList.add('bi-pause-circle');
+        });
+
+        this.audioPlayer.audio.addEventListener('pause', () => {
+            document.querySelector('.play i').classList.remove('bi-pause-circle');
+            document.querySelector('.play i').classList.add('bi-play-circle-fill');
+        });
+    }
+
     initializePageEvents() {
         // 获取所有可点击导航元素
         const navElements = document.querySelectorAll('[data-page]');
@@ -848,19 +1011,6 @@ class UIManager {
     }
 
     initializeSpecificPageEvents() {
-        // 播放器控制
-        document.querySelector('.player .control .play')?.addEventListener('click', () => {
-            this.audioPlayer.play();
-        });
-
-        document.querySelector('.player .control .prev')?.addEventListener('click', () => {
-            this.audioPlayer.prev();
-        });
-
-        document.querySelector('.player .control .next')?.addEventListener('click', () => {
-            this.audioPlayer.next();
-        });
-
         // 收藏按钮
         document.querySelector('#playing-list')?.addEventListener('click', (e) => {
             const loveBtn = e.target.closest('.love');
@@ -902,6 +1052,15 @@ class UIManager {
 
         document.getElementById('close').addEventListener('click', () => {
             ipcRenderer.send('window-close');
+        });
+
+        ipcRenderer.on('window-state-changed', (event, maximized) => {
+          this.isMaximized = maximized;
+          if (this.isMaximized) {
+            minimizeBtn.innerHTML = `<svg version="1.1" width="12" height="12" viewBox="0,0,37.65105,35.84556" style="margin-top:4px;"><g transform="translate(-221.17804,-161.33903)"><g style="stroke:var(--text);" data-paper-data="{&quot;isPaintingLayer&quot;:true}" fill="none" fill-rule="nonzero" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="10" stroke-dasharray="" stroke-dashoffset="0"><path d="M224.68734,195.6846c-2.07955,-2.10903 -2.00902,-6.3576 -2.00902,-6.3576l0,-13.72831c0,0 -0.23986,-1.64534 2.00902,-4.69202c1.97975,-2.68208 4.91067,-2.00902 4.91067,-2.00902h14.06315c0,0 3.77086,-0.23314 5.80411,1.67418c2.03325,1.90732 1.33935,5.02685 1.33935,5.02685v13.39347c0,0 0.74377,4.01543 -1.33935,6.3576c-2.08312,2.34217 -5.80411,1.67418 -5.80411,1.67418h-13.39347c0,0 -3.50079,0.76968 -5.58035,-1.33935z"></path><path d="M229.7952,162.85325h16.06111c0,0 5.96092,-0.36854 9.17505,2.64653c3.21412,3.01506 2.11723,7.94638 2.11723,7.94638v18.55642"></path></g></g></svg>`;
+          } else {
+            minimizeBtn.innerHTML = `<i class="bi bi-app"></i>`;
+          }
         });
 
         // 音频进度条
@@ -966,27 +1125,17 @@ class UIManager {
                 this.handleSearch(event);
             }
         });
+
+        // 主题切换事件
+        document.querySelector(".dock.theme").addEventListener("click", () => {
+            this.toggleTheme();
+        });
     }
 
     async handleSearch(event) {
         const keyword = document.querySelector(".search input").value;
         if (!keyword) return;
-
-        this.show(".search-result");
-        // 显示加载动画...
-        document.querySelector(".search-result .list").innerHTML = `<div class="loading">...</div>`;
-
-        try {
-            const searchResults = await this.musicSearcher.searchBilibiliVideo(keyword);
-            this.renderSearchResults(searchResults, keyword);
-        } catch (error) {
-            console.error("搜索失败:", error);
-            document.querySelector(".search-result .list").innerHTML = "搜索失败，请重试";
-        }
-
-        document.querySelector("#function-list span").style.display = "none";
-        document.querySelector(".search input").value = "";
-        document.querySelector(".search input").blur();
+        this.musicSearcher.search_music(keyword)
     }
 
     toggleTheme() {
@@ -1020,11 +1169,10 @@ class UIManager {
                     <div class="artist"></div>
                 </div>
                 <div class="controls">
-                    <div class="love ${isLoved ? 'loved' : ''}" 
-                         onclick="${isLoved ? 'unlove_song' : 'love_song'}(${index},event)">
+                    <div class="love">
                         <i class="bi bi-heart${isLoved ? '-fill' : ''}"></i>
                     </div>
-                    <div class="delete" onclick="delete_song(${index},event)">
+                    <div class="delete">
                         <i class="bi bi-trash"></i>
                     </div>
                 </div>`;
@@ -1033,8 +1181,8 @@ class UIManager {
             div.querySelector(".name").textContent = song.title;
             div.querySelector(".artist").textContent = song.artist;
 
-            div.addEventListener("click", () => {
-                this.playlistManager.setPlayingNow(index);
+            div.addEventListener("click", (e) => {
+                this.playlistManager.setPlayingNow(index, e);
             });
 
             playlistElement.appendChild(div);
@@ -1084,6 +1232,8 @@ class App {
             this.uiManager.audioPlayer = this.audioPlayer;
             this.uiManager.favoriteManager = this.favoriteManager;
             this.uiManager.musicSearcher = this.musicSearcher;
+            this.musicSearcher.uiManager = this.uiManager
+            this.musicSearcher.playlistManager = this.playlistManager;
 
             // 暴露全局引用
             window.app = this;

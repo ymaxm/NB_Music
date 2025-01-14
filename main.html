@@ -27,7 +27,7 @@
     </div>
   </div>
   <div class="mica">
-    <div class="a dock theme dk" onclick="toggletheme()" data-descp="hide">
+    <div class="a dock theme dk" data-descp="hide">
       <svg viewBox="0,0,307,307" class="light" xmlns="http://www.w3.org/2000/svg"
         xmlns:xlink="http://www.w3.org/1999/xlink" overflow="hidden">
         <defs>
@@ -70,13 +70,13 @@
     </div>
 
     <div class="search">
-      <input class="input search-music" type="text" placeholder="搜索音乐" onkeydown="search_music(event)" />
+      <input class="input search-music" type="text" placeholder="搜索音乐"/>
     </div>
     <div class="sidebar">
       <list class="list focs" id="function-list">
-        <a class="player check" onclick="show('.player')"><i class="bi bi-music-player"></i>&nbsp;播放</a>
-        <a class="love" onclick="show('.love')"><i class="bi bi-heart"></i>&nbsp;收藏</a>
-        <a class="music-list" onclick="show('.music-list')"><i class="bi bi-music-note-list"></i>&nbsp;歌单</a>
+        <a class="player check" data-page=".player"><i class="bi bi-music-player"></i>&nbsp;播放</a>
+        <a class="love" data-page=".love"><i class="bi bi-heart"></i>&nbsp;收藏</a>
+        <a class="music-list" data-page=".music-list"><i class="bi bi-music-note-list"></i>&nbsp;歌单</a>
         <span class="focs" style="top: -55px; left: 0px;"></span>
       </list>
       <div class="playing-list">
@@ -111,13 +111,13 @@
               </div>
             </div>
             <div class="buttons">
-              <div class="nr prev" onclick="prev()">
+              <div class="nr prev" data-action="prev">
                 <i class="bi bi-arrow-left"></i>
               </div>
-              <div class="play" onclick="play()">
+              <div class="play" data-action="play">
                 <i class="bi bi-play-circle-fill"></i>
               </div>
-              <div class="nr next" onclick="next()">
+              <div class="nr next" data-action="next">
                 <i class="bi bi-arrow-right"></i>
               </div>
             </div>
@@ -156,6 +156,6 @@
       </div>
     </div>
 </body>
-<script src="./script.js"></script>
+<script src="./s.js"></script>
 
 </html>
