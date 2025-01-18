@@ -37,6 +37,22 @@ function createObservableArray(callback) {
         }
     });
 }
+function extractMusicTitle(input) {
+    // 匹配所有括号内的内容
+    const bracketsRegex = /<[^>]+>|《[^》]+》|\[[^\]]+\]|【[^】]+】|「[^」]+」/g;
+    // 匹配空格分隔的字符串(排除括号内的空格)
+    const spaceRegex = /(?![<《\[【「])[^\s<>《》\[\]【】「」]+\s+[^\s<>《》\[\]【】「」]+(?![>》\]】」])/g;
+
+    let results = [];
+
+    const bracketMatches = input.match(bracketsRegex) || [];
+    results = results.concat(bracketMatches.map(match => match.slice(1, -1)));
+
+    const spaceMatches = input.match(spaceRegex) || [];
+    results = results.concat(spaceMatches);
+
+    return results.filter(item => item && item.trim()).join(' ');
+}
 
 // 音频播放器类 
 class AudioPlayer {
@@ -111,11 +127,13 @@ class PlaylistManager {
         }
     }
 
-    removeSong(index, event) {
+    removeSong(bvid, event) {
         try {
             if (event) {
                 event.stopPropagation(); // 阻止事件冒泡
             }
+            let index = this.playlist.findIndex(item => item.bvid === bvid);
+
             this.playlist.splice(index, 1);
             this.savePlaylists();
             // 如果删除的是当前播放的歌曲
@@ -131,7 +149,6 @@ class PlaylistManager {
 
     async setPlayingNow(index, replay = true) {
         try {
-
             if (index < 0 || index >= this.playlist.length) {
                 throw new Error("无效的播放索引");
             }
@@ -139,17 +156,9 @@ class PlaylistManager {
             const song = this.playlist[index];
             this.playingNow = index;
 
-            // 更新歌词
+            // 更新歌词和UI
             this.lyricsPlayer.changeLyrics(song.lyric);
-
-            // 更新UI
-            document.documentElement.style.setProperty(
-                "--bgul",
-                "url(" + song.poster + ")"
-            );
-            document.querySelector(".player-content .cover .cover-img").src = song.poster;
-            document.querySelector(".player .info .title").textContent = song.title;
-            document.querySelector(".player .info .artist").textContent = song.artist;
+            this.updateUIForCurrentSong(song);
 
             if (replay) {
                 document.querySelector(".player .control .progress .progress-bar .progress-bar-inner").style.width = "0%";
@@ -163,17 +172,8 @@ class PlaylistManager {
             }
             songs[this.playingNow].classList.add("playing");
 
-            // 设置音频源并播放
-            this.audioPlayer.audio.src = song.audio;
-            try {
-                await this.audioPlayer.audio.play();
-                document.querySelector(".player .control .play i").classList =
-                    "bi bi-pause-circle";
-            } catch (error) {
-                console.error("播放失败:", error);
-                document.querySelector(".player .control .play i").classList =
-                    "bi bi-play-circle-fill";
-            }
+            // 尝试播放，如果失败则重试
+            await this.tryPlayWithRetry(song);
 
             // 保存播放列表
             this.savePlaylists();
@@ -182,12 +182,74 @@ class PlaylistManager {
             console.error("设置当前播放失败:", error);
         }
     }
+    // 尝试播放，带重试机制
+    async tryPlayWithRetry(song, maxRetries = 1) {
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
+            try {
+                // 设置音频源
+                this.audioPlayer.audio.src = song.audio;
 
+                // 尝试播放
+                await this.audioPlayer.audio.play();
+                document.querySelector(".player .control .play i").classList = "bi bi-pause-circle";
+                return; // 成功播放，退出重试
+
+            } catch (error) {
+                console.error(`播放尝试 ${attempt + 1} 失败:`, error);
+
+                if (attempt === maxRetries - 1) {
+                    // 最后一次尝试，重新获取URL
+                    try {
+                        // 假设MusicSearcher是可访问的
+                        const urls = await window.app.musicSearcher.getAudioLink(song.bvid, true);
+                        let newUrl = urls[0];
+
+                        try {
+                            const res = await axios.get(newUrl);
+                            if (res.status === 403) {
+                                newUrl = urls[1];
+                            }
+                        } catch (error) {
+                            newUrl = urls[1];
+                        }
+
+                        // 更新歌曲URL并保存
+                        song.audio = newUrl;
+                        this.savePlaylists();
+
+                        // 最后一次尝试播放
+                        this.audioPlayer.audio.src = newUrl;
+                        await this.audioPlayer.audio.play();
+                        document.querySelector(".player .control .play i").classList = "bi bi-pause-circle";
+                        return;
+
+                    } catch (finalError) {
+                        console.error("重新获取音频链接失败:", finalError);
+                        document.querySelector(".player .control .play i").classList = "bi bi-play-circle-fill";
+                        throw finalError;
+                    }
+                }
+
+                // 等待一段时间后重试
+                await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+            }
+        }
+    }
+    updateUIForCurrentSong(song) {
+        document.documentElement.style.setProperty(
+            "--bgul",
+            "url(" + song.poster + ")"
+        );
+        document.querySelector(".player-content .cover .cover-img").src = song.poster;
+        document.querySelector(".player .info .title").textContent = song.title;
+        document.querySelector(".player .info .artist").textContent = song.artist;
+    }
     changePlaylistName(name) {
         try {
             this.playlistName = name;
             this.savePlaylists();
             this.uiManager.renderPlaylist();
+            this.setPlayingNow(this.playingNow,false);
         } catch (error) {
             console.error("修改播放列表名称失败:", error);
         }
@@ -223,7 +285,11 @@ class PlaylistManager {
 }
 
 class FavoriteManager {
-    constructor() {
+    constructor(playlistManager, uiManager) {
+        this.playlistManager = playlistManager;
+        this.uiManager = uiManager;
+        this.initializeLovelist();
+
         this.lovelist = createObservableArray((change) => {
             const listElement = document.querySelector("#lovelist");
             switch (change.type) {
@@ -237,76 +303,105 @@ class FavoriteManager {
             }
         });
     }
+    initializeLovelist() {
+        this.lovelist = createObservableArray((change) => {
+            const listElement = document.querySelector("#lovelist");
+            if (listElement) {
+                this.renderFavoriteList(listElement);
+            }
+        });
+    }
 
-    addToFavorites(song, index) {
+    saveFavorites() {
+        try {
+            localStorage.setItem('nbmusic_favorites', JSON.stringify(this.lovelist));
+        } catch (error) {
+            console.error("保存收藏列表失败:", error);
+        }
+    }
+    loadFavorites() {
+        try {
+            const savedFavorites = localStorage.getItem('nbmusic_favorites');
+            if (savedFavorites) {
+                // 不直接赋值，而是通过数组方法添加
+                const favorites = JSON.parse(savedFavorites);
+                this.lovelist.length = 0; // 清空数组
+                favorites.forEach(item => this.lovelist.push(item)); // 逐个添加以触发观察者
+            }
+        } catch (error) {
+            console.error("加载收藏列表失败:", error);
+            this.initializeLovelist(); // 重新初始化
+        }
+    }
+    removeFromFavorites(song) {
+        // 使用 splice 而不是 filter 来确保触发观察者
+        const removeIndex = this.lovelist.findIndex(item => item.title === song.title);
+        if (removeIndex !== -1) {
+            this.lovelist.splice(removeIndex, 1);
+        }
+
+        // 更新UI
+        const songElements = document.querySelectorAll(`[id="${song.bvid}"]`);
+        songElements.forEach(songElement => {
+            if (songElement) {
+                const loveButton = songElement.querySelector('.controls .love');
+                loveButton.innerHTML = `<i class="bi bi-heart"></i>`;
+                loveButton.querySelector('i').classList.remove("loved");
+            }
+        });
+        this.saveFavorites();
+    }
+
+    addToFavorites(song) {
         // 检查是否已存在
-        if (this.lovelist.some(item => item.title === song.title)) {
+        if (this.lovelist.some(item => item.bvid === song.bvid)) {
             return;
         }
 
-        this.lovelist.push(song);
+        this.lovelist.push(song);  // 这会触发观察者
 
         // 更新UI
-        const songElement = document.querySelector(`[id="${index}"]`);
+        const songElement = document.querySelector(`[id="${song.bvid}"]`);
         if (songElement) {
             const loveButton = songElement.querySelector('.controls .love');
             loveButton.innerHTML = `<i class="bi bi-heart-fill"></i>`;
             loveButton.querySelector('i').classList.add("loved");
-            loveButton.setAttribute("onclick", `unlove_song(${index},event)`);
         }
-    }
-
-    removeFromFavorites(song, index) {
-        this.lovelist = this.lovelist.filter(item => item.title !== song.title);
-
-        // 更新UI
-        const songElement = document.querySelector(`[id="${index}"]`);
-        if (songElement) {
-            const loveButton = songElement.querySelector('.controls .love');
-            loveButton.innerHTML = `<i class="bi bi-heart"></i>`;
-            loveButton.querySelector('i').classList.remove("loved");
-            loveButton.setAttribute("onclick", `love_song(${index},event)`);
-        }
+        this.saveFavorites();
     }
 
     renderFavoriteList(listElement) {
-        // 清空列表
         listElement.innerHTML = "";
 
         // 重新渲染所有收藏歌曲
-        this.lovelist.forEach((item, index) => {
-            const div = document.createElement("div");
-            div.classList.add("song");
-            div.id = index;
-
-            div.innerHTML = `
-        <img class="poster" alt="Poster image">
-        <div class="info">
-          <div class="name"></div>
-          <div class="artist"></div>
-        </div>
-        <div class="controls">
-          <div class="love loved" onclick="unlove_song(${index},event)">
-            <i class="bi bi-heart-fill"></i>
-          </div>
-        </div>`;
-
-            div.querySelector(".poster").src = item.poster;
-            div.querySelector(".name").textContent = item.title;
-            div.querySelector(".artist").textContent = item.artist;
+        this.lovelist.forEach((song) => {
+            const div = this.uiManager.createSongElement(song, song.bvid, { isDelete: false });
 
             // 点击播放
-            div.addEventListener("click", () => {
-                const playlist = window.app.playlistManager.playlist;
-                //如果在播放列表中找到了这首歌
-                if (playlist.some(song => JSON.stringify(song) === JSON.stringify(item))) {
-                    window.app.playlistManager.setPlayingNow(
-                        playlist.findIndex(song => JSON.stringify(song) === JSON.stringify(item))
-                    );
+            div.addEventListener("click", (e) => {
+                const playlist = this.playlistManager.playlist;
+                const loveBtn = e.target.closest('.love');
+                if (loveBtn) {
+                    e.stopPropagation();
+                    const songIndex = playlist.findIndex(item => item.bvid === e.id);
+                    const song = this.playlistManager.playlist[songIndex];
+
+                    if (loveBtn.querySelector("i").classList.contains('loved')) {
+                        this.removeFromFavorites(song, songIndex);
+                    } else {
+                        this.addToFavorites(song, songIndex);
+                    }
                 } else {
-                    playlist.push(item);
-                    window.app.playlistManager.setPlayingNow(playlist.length - 1);
-                    window.app.uiManager.renderPlaylist();
+                    //如果在播放列表中找到了这首歌
+                    if (playlist.some(item => item.bvid === song.bvid)) {
+                        this.playlistManager.setPlayingNow(
+                            playlist.findIndex(item => item.bvid === song.bvid)
+                        );
+                    } else {
+                        this.playlistManager.addSong(song);
+                        this.playlistManager.setPlayingNow(playlist.length - 1, replay = false);
+                        this.uiManager.renderPlaylist();
+                    }
                 }
             });
 
@@ -504,46 +599,34 @@ class MusicSearcher {
             list.innerHTML = "";
 
             searchResults.forEach((song, index) => {
-                const div = document.createElement("div");
-                div.classList.add("song");
-
-                // 使用模板字符串替代内联事件
-                div.innerHTML = `
-                    <img class="poster" alt="Poster image">
-                    <div class="info">
-                        <div class="name"></div>
-                        <div class="artist"></div>
-                    </div>
-                    <div class="controls">
-                        <div class="love">
-                            <i class="bi bi-heart"></i>
-                        </div>
-                        <div class="play">
-                            <i class="bi bi-play-circle"></i>
-                        </div>
-                        <div class="add2list">
-                            <i class="bi bi-plus-circle"></i>
-                        </div>
-                    </div>`;
-
-                const cleanTitle = song.title.replace(/<em class="keyword">|<\/em>/g, "");
-                div.querySelector(".poster").src = "https:" + song.pic;
-                div.querySelector(".name").textContent = cleanTitle;
-                div.querySelector(".artist").textContent = song.artist;
+                const div = this.uiManager.createSongElement({
+                    title: song.title.replace(/<em class="keyword">|<\/em>/g, ""),
+                    artist: song.artist,
+                    poster: "https:" + song.pic
+                }, song.bvid, { isDelete: false, isLove: false });
 
                 // 点击事件处理
-                div.addEventListener("click", async () => {
+                div.addEventListener("click", async (e) => {
                     try {
-                        // 检查是否已存在
-                        if (self.playlistManager.playlist.find(item => item.title === cleanTitle)) {
+                        // 这玩意有Bug，懒得修了，直接删（Doge）
+                        // const loveBtn = e.target.closest('.love');
+                        // if (loveBtn) {
+                        //     e.stopPropagation();
+                        //     if (loveBtn.querySelector("i").classList.contains('loved')) {
+                        //         this.favoriteManager.removeFromFavorites(song, song.bvid);
+                        //     } else {
+                        //         this.favoriteManager.addToFavorites(song, song.bvid);
+                        //     }
+                        //     return ;
+                        // }
+                        const cleanTitle = song.title.replace(/<em class="keyword">|<\/em>/g, "");
+                        if (this.playlistManager.playlist.find(item => item.title === cleanTitle)) {
                             return;
                         }
 
-                        // 获取音频链接
-                        const urls = await self.getAudioLink(song.bvid, true);
+                        const urls = await this.getAudioLink(song.bvid, true);
                         let url = urls[0];
 
-                        // 检查链接可用性
                         try {
                             const res = await axios.get(url);
                             if (res.status === 403) {
@@ -553,20 +636,19 @@ class MusicSearcher {
                             url = urls[1];
                         }
 
-                        // 创建新歌曲对象
                         const newSong = {
                             title: cleanTitle,
                             artist: song.artist,
                             audio: url,
                             poster: "https:" + song.pic,
-                            lyric: await self.getLyrics(keyword)
+                            bvid: song.bvid,
+                            lyric: await this.getLyrics(keyword)
                         };
 
-                        // 添加到播放列表并播放
-                        self.playlistManager.addSong(newSong);
-                        self.playlistManager.setPlayingNow(self.playlistManager.playlist.length - 1);
-                        self.uiManager.renderPlaylist();
-                        self.uiManager.show(".player");
+                        this.playlistManager.addSong(newSong);
+                        this.playlistManager.setPlayingNow(this.playlistManager.playlist.length - 1);
+                        this.uiManager.renderPlaylist();
+                        document.querySelector("#function-list .player").click();
 
                     } catch (error) {
                         console.error("添加歌曲失败:", error);
@@ -982,9 +1064,6 @@ class UIManager {
                 this.show(element.dataset.page);
             });
         });
-
-        // 为特定页面添加额外的事件监听
-        this.initializeSpecificPageEvents();
     }
 
     // 页面切换方法
@@ -1010,36 +1089,6 @@ class UIManager {
         }
     }
 
-    initializeSpecificPageEvents() {
-        // 收藏按钮
-        document.querySelector('#playing-list')?.addEventListener('click', (e) => {
-            const loveBtn = e.target.closest('.love');
-            if (loveBtn) {
-                e.stopPropagation();
-                const songElement = loveBtn.closest('.song');
-                const songIndex = parseInt(songElement.id);
-                const song = this.playlistManager.playlist[songIndex];
-
-                if (loveBtn.classList.contains('loved')) {
-                    this.favoriteManager.removeFromFavorites(song, songIndex);
-                } else {
-                    this.favoriteManager.addToFavorites(song, songIndex);
-                }
-            }
-        });
-
-        // 删除按钮
-        document.querySelector('#playing-list')?.addEventListener('click', (e) => {
-            const deleteBtn = e.target.closest('.delete');
-            if (deleteBtn) {
-                e.stopPropagation();
-                const songElement = deleteBtn.closest('.song');
-                const songIndex = parseInt(songElement.id);
-                this.playlistManager.removeSong(songIndex);
-                this.renderPlaylist();
-            }
-        });
-    }
     initializeEvents() {
         // 窗口控制按钮
         document.getElementById('minimize').addEventListener('click', () => {
@@ -1055,12 +1104,12 @@ class UIManager {
         });
 
         ipcRenderer.on('window-state-changed', (event, maximized) => {
-          this.isMaximized = maximized;
-          if (this.isMaximized) {
-            minimizeBtn.innerHTML = `<svg version="1.1" width="12" height="12" viewBox="0,0,37.65105,35.84556" style="margin-top:4px;"><g transform="translate(-221.17804,-161.33903)"><g style="stroke:var(--text);" data-paper-data="{&quot;isPaintingLayer&quot;:true}" fill="none" fill-rule="nonzero" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="10" stroke-dasharray="" stroke-dashoffset="0"><path d="M224.68734,195.6846c-2.07955,-2.10903 -2.00902,-6.3576 -2.00902,-6.3576l0,-13.72831c0,0 -0.23986,-1.64534 2.00902,-4.69202c1.97975,-2.68208 4.91067,-2.00902 4.91067,-2.00902h14.06315c0,0 3.77086,-0.23314 5.80411,1.67418c2.03325,1.90732 1.33935,5.02685 1.33935,5.02685v13.39347c0,0 0.74377,4.01543 -1.33935,6.3576c-2.08312,2.34217 -5.80411,1.67418 -5.80411,1.67418h-13.39347c0,0 -3.50079,0.76968 -5.58035,-1.33935z"></path><path d="M229.7952,162.85325h16.06111c0,0 5.96092,-0.36854 9.17505,2.64653c3.21412,3.01506 2.11723,7.94638 2.11723,7.94638v18.55642"></path></g></g></svg>`;
-          } else {
-            minimizeBtn.innerHTML = `<i class="bi bi-app"></i>`;
-          }
+            this.isMaximized = maximized;
+            if (this.isMaximized) {
+                minimizeBtn.innerHTML = `<svg version="1.1" width="12" height="12" viewBox="0,0,37.65105,35.84556" style="margin-top:4px;"><g transform="translate(-221.17804,-161.33903)"><g style="stroke:var(--text);" data-paper-data="{&quot;isPaintingLayer&quot;:true}" fill="none" fill-rule="nonzero" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="10" stroke-dasharray="" stroke-dashoffset="0"><path d="M224.68734,195.6846c-2.07955,-2.10903 -2.00902,-6.3576 -2.00902,-6.3576l0,-13.72831c0,0 -0.23986,-1.64534 2.00902,-4.69202c1.97975,-2.68208 4.91067,-2.00902 4.91067,-2.00902h14.06315c0,0 3.77086,-0.23314 5.80411,1.67418c2.03325,1.90732 1.33935,5.02685 1.33935,5.02685v13.39347c0,0 0.74377,4.01543 -1.33935,6.3576c-2.08312,2.34217 -5.80411,1.67418 -5.80411,1.67418h-13.39347c0,0 -3.50079,0.76968 -5.58035,-1.33935z"></path><path d="M229.7952,162.85325h16.06111c0,0 5.96092,-0.36854 9.17505,2.64653c3.21412,3.01506 2.11723,7.94638 2.11723,7.94638v18.55642"></path></g></g></svg>`;
+            } else {
+                minimizeBtn.innerHTML = `<i class="bi bi-app"></i>`;
+            }
         });
 
         // 音频进度条
@@ -1153,40 +1202,63 @@ class UIManager {
         const playlistElement = document.querySelector("#playing-list");
         playlistElement.innerHTML = "";
 
-        this.playlistManager.playlist.forEach((song, index) => {
-            const div = document.createElement("div");
-            div.classList.add("song");
-            div.id = index;
-
-            const isLoved = window.app.favoriteManager.lovelist.some(
-                item => JSON.stringify(item) === JSON.stringify(song)
-            );
-
-            div.innerHTML = `
-                <img class="poster" alt="Poster image">
-                <div class="info">
-                    <div class="name"></div>
-                    <div class="artist"></div>
-                </div>
-                <div class="controls">
-                    <div class="love">
-                        <i class="bi bi-heart${isLoved ? '-fill' : ''}"></i>
-                    </div>
-                    <div class="delete">
-                        <i class="bi bi-trash"></i>
-                    </div>
-                </div>`;
-
-            div.querySelector(".poster").src = song.poster;
-            div.querySelector(".name").textContent = song.title;
-            div.querySelector(".artist").textContent = song.artist;
+        this.playlistManager.playlist.forEach((song) => {
+            const div = this.createSongElement(song, song.bvid, { isExtract: true });
 
             div.addEventListener("click", (e) => {
-                this.playlistManager.setPlayingNow(index, e);
+                const loveBtn = e.target.closest('.love');
+                const deleteBtn = e.target.closest('.delete');
+                if (!loveBtn && !deleteBtn) {
+                    const index = this.playlistManager.playlist.findIndex(item => item.bvid === song.bvid);
+                    this.playlistManager.setPlayingNow(index, e);
+                    document.querySelector("#function-list .player").click();
+                }
+                let songIndex = this.playlistManager.playlist.findIndex(item => item.bvid === song.bvid);
+                if (loveBtn) {
+                    const song = this.playlistManager.playlist[songIndex];
+
+                    if (loveBtn.querySelector("i").classList.contains('loved')) {
+                        this.favoriteManager.removeFromFavorites(song);
+                    } else {
+                        this.favoriteManager.addToFavorites(song);
+                    }
+                }
+                if (deleteBtn) {
+                    this.playlistManager.removeSong(song.bvid, e);
+                    this.renderPlaylist();
+                }
             });
 
             playlistElement.appendChild(div);
         });
+    }
+    createSongElement(song, bvid, { isLove = true, isDelete = true, isExtract = false } = {}) {
+        const div = document.createElement("div");
+        div.classList.add("song");
+        div.id = bvid;
+
+        const isLoved = window.app.favoriteManager.lovelist.some(
+            item => item.bvid === song.bvid
+        );
+
+        div.innerHTML = `
+            <img class="poster" alt="Poster image">
+            <div class="info">
+                <div class="name"></div>
+                <div class="artist"></div>
+            </div>
+            <div class="controls">
+                ${isLove ? `<div class="love">
+                    <i class="bi bi-heart${isLoved ? '-fill' : ''} ${isLoved ? 'loved' : ''}"></i>
+                </div>` : ''}
+                ${isDelete ? `<div class="delete">
+                    <i class="bi bi-trash"></i>
+                </div>` : ''}
+            </div>`;
+        div.querySelector(".poster").src = song.poster;
+        div.querySelector(".name").textContent = isExtract ? extractMusicTitle(song.title) : song.title;
+        div.querySelector(".artist").textContent = song.artist;
+        return div;
     }
 }
 
@@ -1221,7 +1293,7 @@ class App {
             );
 
             // 创建收藏管理器
-            this.favoriteManager = new FavoriteManager();
+            this.favoriteManager = new FavoriteManager(this.playlistManager, this.uiManager);
 
             // 创建音乐搜索器
             this.musicSearcher = new MusicSearcher();
@@ -1234,6 +1306,7 @@ class App {
             this.uiManager.musicSearcher = this.musicSearcher;
             this.musicSearcher.uiManager = this.uiManager
             this.musicSearcher.playlistManager = this.playlistManager;
+            this.musicSearcher.favoriteManager = this.favoriteManager;
 
             // 暴露全局引用
             window.app = this;
@@ -1247,6 +1320,9 @@ class App {
         try {
             // 加载保存的播放列表
             this.playlistManager.loadPlaylists();
+
+            // 加载保存的收藏列表
+            this.favoriteManager.loadFavorites();
 
             // 检查并应用保存的主题设置
             const savedTheme = localStorage.getItem("theme");
@@ -1286,7 +1362,7 @@ class App {
 // 当DOM加载完成后初始化应用
 document.addEventListener("DOMContentLoaded", () => {
     try {
-        new App();
+        const app = new App();
     } catch (error) {
         console.error("应用初始化失败:", error);
     }

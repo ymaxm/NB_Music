@@ -632,8 +632,12 @@ i.loved{
 }
 
 .song.playing {
-    background: linear-gradient(90deg, var(--theme-1), var(--theme-2)), var(--bg70);
-    background-blend-mode: multiply;
+    background: 
+    linear-gradient(#00000000, #00000000), 
+    linear-gradient(0deg, var(--theme-1), var(--theme-2));
+    background-size: 4px 100%, 4px 100%; 
+    background-position: left top, left top; 
+    background-repeat: no-repeat; 
     box-shadow: 0 0 12px 2px var(--sd);
     transform: scale(1.01);
     border-left: 4px solid var(--accent);
@@ -848,11 +852,14 @@ img {
 }
 
 .mica>.content>.love {
-    top: 50px;
+    top: 88px;
     width: 100%;
-    height: 100%;
+    bottom: 0;
+    overflow-x: auto;
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
+    flex-direction: column;
+    flex-wrap: nowrap;
     align-items: center;
 }
 
@@ -915,8 +922,20 @@ img {
     padding: 5px;
     margin: 5px;
     box-shadow: 0 0 6px 1px var(--sd);
+    
 }
-
+.love>.title{
+    font-size: 1.2em;
+    font-weight: bold;
+    display: flex;
+    margin: 10px 5px 5px 5px;
+    background-color: var(--bg50);
+    transition: all 300ms ease;
+    box-shadow: 0 0 6px 1px var(--sd);
+    align-items: center;
+    justify-content: space-between;
+    border-left: 4px solid transparent;
+}
 .mica>.content>.search-result>.list {
     width: 100%;
     height: 90%;

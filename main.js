@@ -93,7 +93,7 @@ function createWindow() {
 app.whenReady().then(() => {
     createWindow();
     session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
-        if (details.url.includes('bilibili.com')) {
+        if (details.url.includes('bilibili.com') || details.url.includes('bilivideo.cn') || details.url.includes('bilivideo.com')) {
             details.requestHeaders['Cookie'] = 'buvid3=A1623A10-442C-B2ED-9C88-0CCC5CD1FE0884154infoc; b_nut=1736584584; b_lsid=B2C57391_1945481E3EE; _uuid=1042C4A56-952D-D819-810AD-DAFC9A3E410B886233infoc; enable_web_push=DISABLE; buvid_fp=5857ee8e41c5baf5b68bc8aa557dba82; buvid4=03DC0752-2BEA-865B-7A56-9F721E024E1688454-025011108-0lKJqwtJRGBuwNvSg1OGSA%3D%3D; bmg_af_switch=1; bmg_src_def_domain=i1.hdslb.com; CURRENT_FNVAL=2000; home_feed_column=4; browser_resolution=1009-927; sid=87j1to30; bili_ticket=eyJhbGciOiJIUzI1NiIsImtpZCI6InMwMyIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MzY4NDM3OTIsImlhdCI6MTczNjU4NDUzMiwicGx0IjotMX0.5RyEPN1jDBaBbnQR7yK-1wOHTN26dJ68EGnmfamK8-w; bili_ticket_expires=1736843732';
             details.requestHeaders['referer'] = 'https://www.bilibili.com/';
             details.requestHeaders['user-agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3';
