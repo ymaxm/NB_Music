@@ -5,6 +5,7 @@
   "main": "main.js",
   "scripts": {
     "build": "electron-builder build",
+    "publish": "electron-builder build --publish always",
     "run": "electron ."
   },
   "keywords": [],
@@ -46,6 +47,13 @@
         "AppImage",
         "deb"
       ]
-    }
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "NB-Group",
+        "repo": "NB_Music"
+      }
+    ]
   }
 }

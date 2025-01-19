@@ -1,0 +1,36 @@
+name: Build and Publish
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:   
+      - 'README.md'
+      - '*.md'
+    tags:
+      - v*.*.*  
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. 检出代码
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # 2. 设置 Node.js 环境
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      # 3. 安装依赖
+      - name: Install dependencies
+        run: npm install
+
+      # 4. 构建和发布到 GitHub Releases
+      - name: Build and Publish
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: npm run publish
