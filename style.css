@@ -654,8 +654,9 @@ i.loved{
     transition: all 300ms ease;
     box-shadow: 0 0 6px 1px var(--sd);
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     border-left: 4px solid transparent;
+    width: 100%;
     /* 添加透明边框防止布局跳动 */
 }
 .song>.controls>*:hover{
@@ -664,6 +665,11 @@ i.loved{
 .song:hover {
     background: var(--bg70);
     transform: translateX(5px);
+}
+
+#lovelist>.song:hover, .search>.song:hover {
+    background: var(--bg70);
+    transform: scale(1.01);
 }
 
 .song>.info {
@@ -708,6 +714,7 @@ i.loved{
     font-size: 1.2em;
     font-weight: bold;
     color: var(--text);
+    line-height: 2;
 }
 
 .player>.player-content>.control {
@@ -717,7 +724,7 @@ i.loved{
     flex-wrap: wrap;
     flex-direction: row;
     align-content: center;
-    width: 30%;
+    width: 50%;
 }
 
 .player>.player-content>.control>.progress {
@@ -820,12 +827,12 @@ input.search-music:focus {
     align-items: center;
     display: flex;
     height: 100%;
-    width: 100%;
+    width: 50%;
 }
 
 .mica>.content>.player>.player-content>.cover,
 .loading>.mica>.cover {
-    width: 30%;
+    width: 50%;
     aspect-ratio: 1 / 1;
     object-fit: cover;
     box-shadow: 0 0 6px 1px var(--sd);
@@ -891,7 +898,7 @@ img {
     font-weight: bold;
     color: var(--text);
     background-color: var(--bg50);
-    width: 50px;
+    width: 70%;
     height: 50px;
     text-align: center;
     border-radius: 10px;
@@ -922,7 +929,6 @@ img {
     padding: 5px;
     margin: 5px;
     box-shadow: 0 0 6px 1px var(--sd);
-    
 }
 .love>.title{
     font-size: 1.2em;
@@ -961,13 +967,12 @@ img {
 }
 
 #lyrics-container {
-    position: absolute;
     text-align: center;
     right: 0;
     overflow-y: hidden;
     max-height: 90%;
     scroll-behavior: smooth;
-    width: max-content;
+    width: 50%;
 }
 
 .lyric-line {
