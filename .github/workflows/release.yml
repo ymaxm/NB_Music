@@ -1,17 +1,13 @@
-name: Build and Publish
+name: Build and Release
 
 on:
   push:
     branches:
       - main
-    paths-ignore:   
-      - 'README.md'
-      - '*.md'
-    tags:
-      - v*.*.*  
 
 jobs:
   build:
+    if: startsWith(github.event.head_commit.message, 'v') # 仅当提交消息以 v 开头时运行
     runs-on: ubuntu-latest
 
     steps:
@@ -19,7 +15,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # 2. 设置 Node.js 环境
+      # 2. 设置 Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
@@ -29,8 +25,16 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      # 4. 构建和发布到 GitHub Releases
-      - name: Build and Publish
+      # 4. 构建 Electron 应用
+      - name: Build Application
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: npm run publish
+        run: npm run build
+
+      # 5. 上传构建产物到 Release
+      - name: Publish to GitHub Releases
+        uses: samuelmeuli/action-electron-builder@v2
+        with:
+          release: github
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
