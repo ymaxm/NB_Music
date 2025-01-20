@@ -1,59 +1,69 @@
 {
-  "name": "nb_music",
-  "version": "0.1.0",
-  "description": "<!-- 图片image.png -->\r <div align=\"center\">\r   <img src=\"./img/poster.jpeg\" />\r   Drawed by AI\r </div>",
-  "main": "main.js",
-  "scripts": {
-    "build": "electron-builder build",
-    "publish": "electron-builder build --publish always",
-    "run": "electron ."
-  },
-  "keywords": [],
-  "author": "",
-  "license": "GPL 3.0",
-  "devDependencies": {
-    "electron": "^33.3.1",
-    "electron-builder": "^25.1.8"
-  },
-  "dependencies": {
-    "NeteaseCloudMusicApi": "^4.25.0",
-    "axios": "^1.7.9",
-    "md5": "^2.3.0",
-    "puppeteer": "^24.0.0"
-  },
-  "build": {
-    "appId": "com.nbgroup.nbmusic",
-    "productName": "NB Music",
-    "directories": {
-      "output": "dist"
+    "name": "nb_music",
+    "version": "0.1.6",
+    "description": "一款在线音乐播放器",
+    "main": "src/main.js",
+    "scripts": {
+        "build": "electron-builder build",
+        "publish": "electron-builder build --publish always",
+        "run": "electron ."
     },
-    "win": {
-      "icon": "icons/icon.ico",
-      "target": [
-        "nsis",
-        "zip"
-      ]
+    "keywords": [],
+    "author": {
+        "name": "NB-Group",
+        "email": "nb-group@qq.com"
     },
-    "mac": {
-      "icon": "icons/icon.icns",
-      "target": [
-        "dmg",
-        "zip"
-      ]
+    "license": "GPL-3.0-only",
+    "devDependencies": {
+        "@eslint/js": "^9.18.0",
+        "electron": "^33.3.1",
+        "electron-builder": "^25.1.8",
+        "eslint": "^9.18.0",
+        "globals": "^15.14.0"
     },
-    "linux": {
-      "icon": "icons/icon.png",
-      "target": [
-        "AppImage",
-        "deb"
-      ]
+    "dependencies": {
+        "NeteaseCloudMusicApi": "^4.25.0",
+        "axios": "^1.7.9",
+        "electron-reload": "^2.0.0-alpha.1",
+        "md5": "^2.3.0",
+        "puppeteer": "^24.0.0"
     },
-    "publish": [
-      {
-        "provider": "github",
-        "owner": "NB-Group",
-        "repo": "NB_Music"
-      }
-    ]
-  }
+    "build": {
+        "artifactName": "${name}-v${version}-${os}-${arch}.${ext}",
+        "appId": "com.nbgroup.nbmusic",
+        "productName": "NB Music",
+        "directories": {
+            "output": "dist"
+        },
+        "win": {
+            "icon": "./icons/icon.ico",
+            "target": [
+                "nsis",
+                "zip"
+            ]
+        },
+        "mac": {
+            "icon": "./icons/icon.icns",
+            "target": [
+                "dmg",
+                "zip"
+            ]
+        },
+        "linux": {
+            "icon": "./icons/icon.png",
+            "target": [
+                "AppImage",
+                "deb",
+                "pacman"
+            ],
+            "category": "AudioVideo"
+        },
+        "publish": [
+            {
+                "provider": "github",
+                "owner": "NB-Group",
+                "repo": "NB_Music"
+            }
+        ]
+    }
 }

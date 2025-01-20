@@ -589,6 +589,7 @@ i.loved{
     -webkit-background-clip: text;
 }
 .sidebar {
+    min-width: 250px;
     opacity: 1;
     position: fixed;
     top: 38px;
