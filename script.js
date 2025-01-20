@@ -445,8 +445,7 @@ class FavoriteManager {
                     } else {
                         this.playlistManager.addSong(song);
                         this.playlistManager.setPlayingNow(
-                            playlist.length - 1,
-                            (replay = false)
+                            playlist.length - 1,false
                         );
                         this.uiManager.renderPlaylist();
                     }

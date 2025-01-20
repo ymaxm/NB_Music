@@ -599,8 +599,6 @@ i.loved{
     border-radius: 10px;
     box-shadow: 0 0 6px 1px var(--sd);
     padding: 10px;
-    /* backdrop-filter: blur(5px) saturate(1.5); */
-    /* -webkit-backdrop-filter: blur(5px) saturate(1.5); */
     background-color: var(--bg50);
     display: grid;
     grid-template-rows: auto 1fr;
@@ -615,14 +613,14 @@ i.loved{
     border-radius: 10px;
     padding: 5px;
     overflow: auto;
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
 }
 
 #playing-list {
     border-top: 0.063rem solid var(--text2);
     border-radius: 0px;
 }
-
-
 
 .poster {
     object-fit: cover;
@@ -656,8 +654,7 @@ i.loved{
     align-items: center;
     justify-content: flex-start;
     border-left: 4px solid transparent;
-    width: 100%;
-    /* 添加透明边框防止布局跳动 */
+    width: auto;
 }
 .song>.controls>*:hover{
     transform: scale(1.1);
@@ -724,7 +721,7 @@ i.loved{
     flex-wrap: wrap;
     flex-direction: row;
     align-content: center;
-    width: 50%;
+    width: 70%;
 }
 
 .player>.player-content>.control>.progress {
@@ -813,6 +810,7 @@ input.search-music:focus {
     position: relative;
     display: flex;
     height: 100%;
+    left: ;
     flex-wrap: nowrap;
     align-content: center;
     align-items: center;
@@ -832,7 +830,7 @@ input.search-music:focus {
 
 .mica>.content>.player>.player-content>.cover,
 .loading>.mica>.cover {
-    width: 50%;
+    width: 70%;
     aspect-ratio: 1 / 1;
     object-fit: cover;
     box-shadow: 0 0 6px 1px var(--sd);
@@ -858,7 +856,7 @@ img {
     user-select: none;
 }
 
-.mica>.content>.love {
+.mica>.content>.love-list {
     top: 88px;
     width: 100%;
     bottom: 0;
@@ -893,7 +891,7 @@ img {
 }
 
 
-.mica>.content>.love>div {
+.mica>.content>.love-list>div {
     font-size: 20px;
     font-weight: bold;
     color: var(--text);
@@ -930,7 +928,7 @@ img {
     margin: 5px;
     box-shadow: 0 0 6px 1px var(--sd);
 }
-.love>.title{
+.love-list>.title{
     font-size: 1.2em;
     font-weight: bold;
     display: flex;
@@ -961,7 +959,7 @@ img {
 
 .content {
     height: 100%;
-    left: 0;
+    left: 180px;
     right: 0;
     position: fixed;
 }
@@ -1059,4 +1057,15 @@ img {
     margin: 9px 8px 0 3px;
     height: 22px;
     width: 22px;
+}
+
+.listname{
+    display: inline-flex;
+}
+.listname>.controls>* {
+    display: inline-block;
+    border-radius: 8px;
+    margin: 0px 4px;
+    transition: transform 400ms cubic-bezier(0.14, 1.02, 0.17, 0.03) !important;
+    text-align: center;
 }
