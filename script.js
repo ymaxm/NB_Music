@@ -179,7 +179,7 @@ class PlaylistManager {
             }
 
             // 更新播放状态样式
-            let songs = document.querySelectorAll(".list .song");
+            let songs = document.querySelectorAll("#playing-list .song");
             for (let i = 0; i < songs.length; i++) {
                 songs[i].classList.remove("playing");
             }
@@ -442,12 +442,14 @@ class FavoriteManager {
                                 (item) => item.bvid === song.bvid
                             )
                         );
+                        document.querySelector("#function-list .player").click();
                     } else {
                         this.playlistManager.addSong(song);
                         this.playlistManager.setPlayingNow(
-                            playlist.length - 1,false
+                            playlist.length - 1
                         );
                         this.uiManager.renderPlaylist();
+                        document.querySelector("#function-list .player").click();
                     }
                 }
             });
@@ -697,11 +699,12 @@ class MusicSearcher {
                             /<em class="keyword">|<\/em>/g,
                             ""
                         );
-                        if (
-                            this.playlistManager.playlist.find(
+                        if (this.playlistManager.playlist.find((item) => item.title === cleanTitle)) {
+                            const existingIndex = this.playlistManager.playlist.findIndex(
                                 (item) => item.title === cleanTitle
-                            )
-                        ) {
+                            );
+                            this.playlistManager.setPlayingNow(existingIndex);
+                            document.querySelector("#function-list .player").click();
                             return;
                         }
 
