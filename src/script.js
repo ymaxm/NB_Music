@@ -37,6 +37,42 @@ function createObservableArray(callback) {
         }
     });
 }
+
+async function cropImageToSquare(imageUrl) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";  // 处理跨域图片
+        
+        img.onload = () => {
+            // 创建 canvas
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // 计算正方形尺寸和裁剪位置
+            const size = Math.min(img.width, img.height);
+            const x = (img.width - size) / 2;
+            const y = (img.height - size) / 2;
+            
+            // 设置 canvas 尺寸
+            canvas.width = size;
+            canvas.height = size;
+            
+            // 绘制裁剪后的图片
+            ctx.drawImage(img, x, y, size, size, 0, 0, size, size);
+            
+            // 转换为图片 URL
+            resolve({
+                url: canvas.toDataURL('image/jpeg'),
+                size: `${size}x${size}`
+            });
+        };
+        
+        img.onerror = () => reject(new Error('Failed to load image'));
+        img.src = imageUrl;
+    });
+}
+
+
 function extractMusicTitle(input) {
     // 匹配所有括号内的内容
     const bracketsRegex = /<[^>]+>|《[^》]+》|\[[^\]]+\]|【[^】]+】|「[^」]+」/g;
@@ -54,6 +90,19 @@ function extractMusicTitle(input) {
     return results.filter((item) => item && item.trim()).join(" ");
 }
 
+async function getImageDimensions(imageUrl) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+            resolve(`${img.width}x${img.height}`);
+        };
+        img.onerror = () => {
+            reject(new Error('Failed to load image'));
+        };
+        img.src = imageUrl;
+    });
+}
+
 // 音频播放器类
 class AudioPlayer {
     constructor(playlistManager) {
@@ -69,6 +118,33 @@ class AudioPlayer {
                 this.audio.play();
             } else {
                 this.next();
+            }
+        });
+
+        if ('mediaSession' in navigator) {
+            navigator.mediaSession.setActionHandler('play', () => {
+                this.play();
+            });
+            navigator.mediaSession.setActionHandler('pause', () => {
+                this.play();
+            });
+            navigator.mediaSession.setActionHandler('previoustrack', () => {
+                this.prev(); 
+            });
+            navigator.mediaSession.setActionHandler('nexttrack', () => {
+                this.next();
+            });
+        }
+
+        this.audio.addEventListener('play', () => {
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.playbackState = 'playing';
+            }
+        });
+        
+        this.audio.addEventListener('pause', () => {
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.playbackState = 'paused'; 
             }
         });
     }
@@ -161,6 +237,21 @@ class PlaylistManager {
                 document.querySelector(".player .control .progress .progress-bar .progress-bar-inner").style.width = "0%";
                 this.audioPlayer.audio.currentTime = 0;
             }
+
+            if ('mediaSession' in navigator) {
+                // 裁剪图片为正方形
+                const {url, size} = await cropImageToSquare(song.poster);
+                
+                navigator.mediaSession.metadata = new MediaMetadata({
+                    title: song.title,
+                    artist: song.artist,
+                    artwork: [
+                        { src: url, sizes: size, type: 'image/jpeg' }
+                    ]
+                });
+            }
+
+            this.uiManager.renderPlaylist();    
 
             // 更新播放状态样式
             let songs = document.querySelectorAll("#playing-list .song");
@@ -728,109 +819,88 @@ class MusicSearcher {
         }
     }
 }
-
-// 歌词渲染类
+//歌词渲染类
 class LyricsPlayer {
     constructor(lyricsString, audioElement) {
         this.lyricsContainer = document.getElementById("lyrics-container");
         this.lyricsContainer.innerHTML = "";
         this.parsedData = this.parseLyrics(lyricsString);
-        this.audio = audioElement; // 保存audio引用
+        this.audio = audioElement;
         this.activeLines = new Set();
         this.completedLines = new Set();
         this.animationFrame = null;
+        this.lastScrollTime = Date.now();
 
-        // 监听audio事件
+        // 创建滚动容器
+        this.scrollWrapper = document.createElement('div');
+        this.scrollWrapper.className = 'lyrics-scroll-wrapper';
+        this.lyricsContainer.appendChild(this.scrollWrapper);
+
+        // 初始化transform相关变量
+        this.currentTransformY = 0;
+        this.targetTransformY = 0;
+        this.animating = false;
+
+        // 绑定audio事件
         this.audio.addEventListener("play", () => this.start());
         this.audio.addEventListener("pause", () => this.stop());
         this.audio.addEventListener("seeking", () => this.onSeek());
 
         this.init();
     }
+
     changeLyrics(newLyricsString) {
-        // 清除现有状态
         this.stop();
         this.activeLines.clear();
         this.completedLines.clear();
-        this.lyricsContainer.innerHTML = "";
-
-        // 解析新歌词
+        this.scrollWrapper.innerHTML = "";
         this.parsedData = this.parseLyrics(newLyricsString);
-
-        // 重新初始化
         this.init();
-
-        // 如果音频正在播放，则启动动画
         if (!this.audio.paused) {
             this.start();
         }
     }
-    createMetadataElement(metadata) {
-        const div = document.createElement("div");
-        div.className = "metadata";
 
-        metadata.content.forEach((item) => {
-            const span = document.createElement("span");
-            span.textContent = item.tx;
-            div.appendChild(span);
-        });
-
-        return div;
-    }
     parseLyrics(lyricsString) {
         if (!lyricsString) {
-            // 返回暂无歌词
-            return [
-                {
-                    type: "lyric",
-                    lineStart: 0,
-                    lineDuration: 5000,
-                    chars: [{ text: "暂无歌词", startTime: 0, duration: 5000 }]
-                }
-            ];
+            return [{
+                type: "lyric",
+                lineStart: 0,
+                lineDuration: 5000,
+                chars: [{ text: "暂无歌词", startTime: 0, duration: 5000 }]
+            }];
         }
+
         const lines = lyricsString.split("\n");
         const parsedData = [];
 
-        // 从第一行开始判断，如果有是传统时间戳格式，则按照传统时间戳格式解析
-        let isTraditionalFormat = 0;
-        lines.forEach((line) => {
-            if (line.match(/^\[\d{2}:\d{2}\.\d{2,3}\]/)) {
-                isTraditionalFormat = 1;
-                return;
-            }
-        });
+        // 检查是否为传统时间戳格式
+        const isTraditionalFormat = lines.some(line => 
+            line.match(/^\[\d{2}:\d{2}\.\d{2,3}\]/)
+        );
+
         if (isTraditionalFormat) {
-            // 处理传统时间戳格式
-            lines.forEach((line) => {
+            lines.forEach(line => {
                 if (line.trim() === "") return;
-
-                const timeRegex = /\[(\d{2}):(\d{2})\.(\d{2,3})\](.*)/;
-                const match = line.match(timeRegex);
-
+                const match = line.match(/\[(\d{2}):(\d{2})\.(\d{2,3})\](.*)/);
                 if (match) {
                     const [, mm, ss, ms, text] = match;
                     const startTime = (parseInt(mm) * 60 + parseInt(ss)) * 1000 + parseInt(ms);
-
                     parsedData.push({
                         type: "lyric",
                         lineStart: startTime,
-                        lineDuration: 10000, // 默认持续5秒
-                        chars: [
-                            {
-                                text: text.trim(),
-                                startTime: startTime,
-                                duration: 5000
-                            }
-                        ]
+                        lineDuration: 5000,
+                        chars: [{
+                            text: text.trim(),
+                            startTime: startTime,
+                            duration: 5000
+                        }]
                     });
                 }
             });
         } else {
-            // 原有的逐字歌词解析逻辑
-            lines.forEach((line) => {
+            lines.forEach(line => {
                 if (line.trim() === "") return;
-
                 if (line.startsWith("{")) {
                     const metadata = JSON.parse(line);
                     parsedData.push({
@@ -840,25 +910,20 @@ class LyricsPlayer {
                     });
                     return;
                 }
-
                 if (line.startsWith("[")) {
                     const timeMatch = line.match(/\[(\d+),(\d+)\]/);
                     const charMatches = line.match(/\((\d+),(\d+),\d+\)([^(]+)/g);
-
                     if (timeMatch && charMatches) {
                         const lineStart = parseInt(timeMatch[1]);
                         const lineDuration = parseInt(timeMatch[2]);
-                        const chars = [];
-
-                        charMatches.forEach((charMatch) => {
+                        const chars = charMatches.map(charMatch => {
                             const [, startTime, duration, text] = charMatch.match(/\((\d+),(\d+),\d+\)(.+)/);
-                            chars.push({
+                            return {
                                 text,
                                 startTime: parseInt(startTime),
                                 duration: parseInt(duration)
-                            });
+                            };
                         });
-
                         parsedData.push({
                             type: "lyric",
                             lineStart,
@@ -869,51 +934,84 @@ class LyricsPlayer {
                 }
             });
         }
-
         return parsedData;
     }
+
     createLyricElement(lyricData) {
         const lineDiv = document.createElement("div");
         lineDiv.className = "lyric-line";
 
-        // 处理整行歌词的情况
-        if (lyricData.chars.length === 1 && lyricData.chars[0].text === lyricData.chars[0].text.trim()) {
+        if (lyricData.chars.length === 1 && 
+            lyricData.chars[0].text === lyricData.chars[0].text.trim()) {
             const charSpan = document.createElement("span");
             charSpan.className = "char";
             charSpan.textContent = lyricData.chars[0].text;
             lineDiv.appendChild(charSpan);
         } else {
-            // 处理逐字歌词
-            lyricData.chars.forEach((char) => {
+            lyricData.chars.forEach(char => {
                 const charSpan = document.createElement("span");
                 charSpan.className = "char";
                 charSpan.textContent = char.text;
                 lineDiv.appendChild(charSpan);
             });
         }
-
         return lineDiv;
     }
 
-    init() {
-        this.parsedData.forEach((data) => {
-            if (data.type === "metadata") {
-                this.lyricsContainer.appendChild(this.createMetadataElement(data));
-            } else {
-                this.lyricsContainer.appendChild(this.createLyricElement(data));
-            }
+    createMetadataElement(metadata) {
+        const div = document.createElement("div");
+        div.className = "metadata";
+        metadata.content.forEach(item => {
+            const span = document.createElement("span");
+            span.textContent = item.tx;
+            div.appendChild(span);
         });
+        return div;
+    }
 
-        this.startTime = Date.now();
+    init() {
+        this.lyricsContainer.style.position = 'relative';
+        this.lyricsContainer.style.overflow = 'hidden';
+        this.scrollWrapper.style.transform = 'translateY(0)';
+        this.currentTransformY = 0;
+        this.targetTransformY = 0;
+
+        this.parsedData.forEach(data => {
+            const element = data.type === "metadata" 
+                ? this.createMetadataElement(data)
+                : this.createLyricElement(data);
+            this.scrollWrapper.appendChild(element);
+        });
+    }
+
+    start() {
         this.animate();
     }
 
-    animate(last) {
-        const currentTime = this.audio.currentTime * 1000; // 转换为毫秒
+    stop() {
+        if (this.animationFrame) {
+            cancelAnimationFrame(this.animationFrame);
+            this.animationFrame = null;
+        }
+    }
+
+    onSeek() {
+        this.activeLines.clear();
+        this.completedLines.clear();
+        Array.from(this.scrollWrapper.querySelectorAll('.char')).forEach(char => {
+            char.classList.remove('active', 'completed');
+        });
+    }
+
+    animate() {
+        if (!this.scrollWrapper) return;
+        const currentTime = this.audio.currentTime * 1000;
 
         this.parsedData.forEach((data, dataIndex) => {
             if (data.type === "lyric") {
-                const line = this.lyricsContainer.children[dataIndex];
+                const line = this.scrollWrapper.children[dataIndex];
+                if (!line) return;
+
                 const chars = Array.from(line.children);
                 let hasActiveLine = false;
                 let allCompleted = true;
@@ -940,6 +1038,7 @@ class LyricsPlayer {
                 if (hasActiveLine) {
                     line.classList.add("active");
                     this.activeLines.add(dataIndex);
+                    this.scrollToActiveLine(line);
                 } else {
                     line.classList.remove("active");
                     this.activeLines.delete(dataIndex);
@@ -947,57 +1046,44 @@ class LyricsPlayer {
 
                 if (allCompleted) {
                     this.completedLines.add(dataIndex);
-                    chars.forEach((char) => {
-                        char.classList.add("completed");
-                        char.classList.remove("active");
-                    });
                 }
             }
         });
 
-        const container = document.querySelector("#lyrics-container");
-        const activeLyric = container.querySelector(".lyric-line.active");
-        let scrollPosition = 0;
-
-        if (activeLyric) {
-            const containerHeight = container.clientHeight;
-            const lyricPosition = activeLyric.offsetTop;
-            const lyricHeight = activeLyric.offsetHeight;
-            scrollPosition = lyricPosition - containerHeight / 2 + lyricHeight / 2;
-            if (last != scrollPosition) {
-                console.log(scrollPosition, last);
-                container.scrollTo({
-                    top: scrollPosition,
-                    behavior: "smooth"
-                });
-            }
-        }
-
-        this.animationFrame = requestAnimationFrame(() => this.animate(scrollPosition));
-    }
-    // 新增控制方法
-    start() {
-        if (!this.animationFrame) {
-            this.animate();
-        }
+        this.animationFrame = requestAnimationFrame(() => this.animate());
     }
 
-    stop() {
-        if (this.animationFrame) {
-            cancelAnimationFrame(this.animationFrame);
-            this.animationFrame = null;
+    scrollToActiveLine(activeLine) {
+        const now = Date.now();
+        if (now - this.lastScrollTime < 50) return;
+
+        const containerHeight = this.lyricsContainer.clientHeight;
+        const lineOffset = activeLine.offsetTop;
+        const lineHeight = activeLine.offsetHeight;
+
+        this.targetTransformY = -(lineOffset - (containerHeight - lineHeight) / 2);
+
+        if (!this.animating) {
+            this.animating = true;
+            this.smoothScroll();
         }
+
+        this.lastScrollTime = now;
     }
 
-    onSeek() {
-        // 清除所有活动状态,重新根据当前时间计算
-        this.activeLines.clear();
-        this.completedLines.clear();
-        // 如果是暂停状态,手动触发一次动画更新
-        if (this.audio.paused) {
-            this.animate();
-            this.stop();
+    smoothScroll() {
+        const diff = this.targetTransformY - this.currentTransformY;
+        const delta = diff * 0.15;
+
+        if (Math.abs(diff) < 0.5) {
+            this.animating = false;
+            return;
         }
+
+        this.currentTransformY += delta;
+        this.scrollWrapper.style.transform = `translateY(${this.currentTransformY}px)`;
+
+        requestAnimationFrame(() => this.smoothScroll());
     }
 }
 
@@ -1075,6 +1161,13 @@ class UIManager {
 
     // 页面切换方法
     show(pageName) {
+        if (pageName === ".music-list"){
+            document.querySelector(".music-list-info").style.backgroundColor = "var(--bg50)";
+            setTimeout(() => {
+                document.querySelector(".music-list-info").style.backgroundColor = "";
+            }, 200); 
+        }
+
         // 隐藏所有内容
         const contents = document.querySelectorAll(".content>div");
         contents.forEach((content) => content.classList.add("hide"));
@@ -1211,7 +1304,9 @@ class UIManager {
             const div = this.createSongElement(song, song.bvid, {
                 isExtract: true
             });
-
+            if (this.playlistManager.playlist[this.playlistManager.playingNow].bvid === song.bvid) {
+                div.classList.add("playing");
+            }
             div.addEventListener("click", (e) => {
                 const loveBtn = e.target.closest(".love");
                 const deleteBtn = e.target.closest(".delete");
@@ -1349,6 +1444,9 @@ class App {
 
             // 渲染播放列表
             this.uiManager.renderPlaylist();
+
+            // 打开播放器界面
+            document.querySelector("#function-list .player").click();
 
             // 设置默认播放
             if (this.playlistManager.playlist.length > 0) {
