@@ -1,15 +1,11 @@
 @import url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css");
 
-/* 主题配色风格源自于原班人马项目：Windows12网页版 */
 :root {
     --text: #000;
     --text2: #444;
-    --bg1: rgba(242, 242, 242, .9); 
-    --bg2: rgba(255, 255, 255, .9);
-    --bg3: rgba(0, 0, 0, .033);
-    --bg4: #aaa;
+    --bg: #ffffff;
     --bg50: #ffffff80;
-    --bg70: #ffffff80;
+    --bg70: #ffffffe7;
     --sd: #22222230;
     --card: #ffffff78;
     --hover: #ffffff65;
@@ -35,10 +31,7 @@
 :root.dark {
     --text: #ddd;
     --text2: #aaa;
-    --bg1: rgba(36, 36, 36, .8);
-    --bg2: rgba(255, 255, 255, .1);
-    --bg3: rgba(0, 0, 0, .15);
-    --bg4: #444;
+    --bg: #000000;
     --bg50: #00000080;
     --bg70: radial-gradient(rgba(26, 31, 53, 0.96) 25%, rgba(32, 32, 32, 0.96) 100%);
     --sd: #000000a0;
@@ -402,6 +395,14 @@ i {
     z-index: 1;
 }
 
+.btn {
+    border: 0px solid;
+    border-radius: 10px;
+    padding: 7px 10px;
+    transition: 100ms;
+    background-color: #00000000;
+}
+
 list {
     display: block;
     padding-left: 0;
@@ -611,7 +612,6 @@ i.loved{
     -webkit-background-clip: text;
 }
 .sidebar {
-    min-width: 250px;
     opacity: 1;
     position: fixed;
     top: 38px;
@@ -622,13 +622,9 @@ i.loved{
     border-radius: 10px;
     box-shadow: 0 0 6px 1px var(--sd);
     padding: 10px;
-    background-color: var(--bg70);
+    background-color: var(--bg50);
     display: grid;
     grid-template-rows: auto 1fr;
-    transition: all .3s cubic-bezier(.77,0,.18,1);
-    backdrop-filter: blur(20px) saturate(1.5);
-    -webkit-backdrop-filter: blur(20px) saturate(1.5);
-    will-change: transform, opacity;
 }
 
 .sidebar>.playing-list {
@@ -640,6 +636,8 @@ i.loved{
     border-radius: 10px;
     padding: 5px;
     overflow: auto;
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
 }
 
 #playing-list {
@@ -980,7 +978,6 @@ img {
 .sidebar.hide {
     opacity: 0.5;
     transform: translateX(-99%);
-    transition: all .6s cubic-bezier(.77,0,.18,1);
 }
 
 .content {
@@ -1102,7 +1099,7 @@ img {
     text-align: center;
 }
 .content>.music-list{
-    left: 20%;
+    left: 18%;
     top: 171px;
 }
 .content>.music-list>.music-list-info{
@@ -1111,7 +1108,6 @@ img {
     padding: 10px;
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
-    will-change: transform, opacity;
     box-shadow: 0 0 6px 1px var(--sd);
     flex-direction: column;
     flex-wrap: wrap;
@@ -1126,7 +1122,6 @@ img {
     border-radius: 10px;
     box-shadow: rgba(0, 0, 0, 0.36) 0px 16px 24px -12px;
     background-color: var(--card);
-    object-fit: cover;
 }
 
 .content>.music-list>.music-list-info>button{
@@ -1135,3 +1130,4 @@ img {
     text-align: center;
     background: linear-gradient(120deg, var(--theme-1), var(--theme-2));
 }
+

@@ -121,13 +121,21 @@ function createWindow() {
         event.preventDefault();
     });
 }
+async function formatCookieString(cookiePromise) {
+    const cookies = await cookiePromise;
+    return cookies
+        .map(cookie => `${cookie.name}=${cookie.value}`)
+        .join(';');
+}
 
 const cookie = getBilibiliCookies();
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
     createWindow();
+    const cookieString = await formatCookieString(cookie);
+    console.log(cookieString);
     session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
         if (details.url.includes("bilibili.com") || details.url.includes("bilivideo.cn") || details.url.includes("bilivideo.com")) {
-            details.requestHeaders["Cookie"] = cookie;
+            details.requestHeaders["Cookie"] = cookieString;
             details.requestHeaders["referer"] = "https://www.bilibili.com/";
             details.requestHeaders["user-agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3";
         }

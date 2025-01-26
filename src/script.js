@@ -1161,13 +1161,6 @@ class UIManager {
 
     // 页面切换方法
     show(pageName) {
-        if (pageName === ".music-list"){
-            document.querySelector(".music-list-info").style.backgroundColor = "var(--bg50)";
-            setTimeout(() => {
-                document.querySelector(".music-list-info").style.backgroundColor = "";
-            }, 200); 
-        }
-
         // 隐藏所有内容
         const contents = document.querySelectorAll(".content>div");
         contents.forEach((content) => content.classList.add("hide"));
