@@ -14,3 +14,6 @@ Thumbs.db
 
 # 忽略环境变量配置
 .env
+
+# 忽略Cookies缓存
+./src/cookies.json
