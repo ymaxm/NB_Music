@@ -25,6 +25,7 @@
         "NeteaseCloudMusicApi": "^4.25.0",
         "axios": "^1.7.9",
         "electron-reload": "^2.0.0-alpha.1",
+        "electron-store": "8.2.0",
         "md5": "^2.3.0",
         "puppeteer": "^24.0.0"
     },
