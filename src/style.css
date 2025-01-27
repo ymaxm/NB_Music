@@ -204,10 +204,10 @@ list:not(.new)>a:active,
 }
 
 .input:focus {
-    background-color: var(--bg);
+    background-color: var(--bg1);
     background-clip: padding-box, border-box;
     background-origin: padding-box, border-box;
-    background-image: linear-gradient(var(--bg), var(--bg)), linear-gradient(90deg, var(--theme-1), var(--theme-2));
+    background-image: linear-gradient(var(--bg1), var(--bg1)), linear-gradient(90deg, var(--theme-1), var(--theme-2));
     border-bottom-color: transparent;
     box-shadow: 0 1px 10px var(--s3d);
     opacity: 1;
@@ -643,7 +643,7 @@ i.loved{
 }
 
 #playing-list {
-    border-top: 0.063rem solid var(--text2);
+    /* border-top: 0.063rem solid var(--text2); */
     border-radius: 0px;
 }
 
@@ -806,10 +806,10 @@ input.search-music:focus {
     width: 50%;
     transition: 250ms ease-in-out;
     height: 40px;
-    background: var(--bg);
+    background: var(--bg1);
     background-clip: padding-box, border-box;
     background-origin: padding-box, border-box;
-    background-image: linear-gradient(var(--bg), var(--bg)), linear-gradient(90deg, var(--theme-1), var(--theme-2));
+    background-image: linear-gradient(var(--bg1), var(--bg1)), linear-gradient(90deg, var(--theme-1), var(--theme-2));
     border-bottom-color: transparent;
     box-shadow: 0 1px 10px var(--s3d);
     opacity: 1;

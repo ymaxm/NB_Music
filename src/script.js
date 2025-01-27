@@ -42,31 +42,31 @@ async function cropImageToSquare(imageUrl) {
     return new Promise((resolve, reject) => {
         const img = new Image();
         img.crossOrigin = "anonymous";  // 处理跨域图片
-        
+
         img.onload = () => {
             // 创建 canvas
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
-            
+
             // 计算正方形尺寸和裁剪位置
             const size = Math.min(img.width, img.height);
             const x = (img.width - size) / 2;
             const y = (img.height - size) / 2;
-            
+
             // 设置 canvas 尺寸
             canvas.width = size;
             canvas.height = size;
-            
+
             // 绘制裁剪后的图片
             ctx.drawImage(img, x, y, size, size, 0, 0, size, size);
-            
+
             // 转换为图片 URL
             resolve({
                 url: canvas.toDataURL('image/jpeg'),
                 size: `${size}x${size}`
             });
         };
-        
+
         img.onerror = () => reject(new Error('Failed to load image'));
         img.src = imageUrl;
     });
@@ -129,7 +129,7 @@ class AudioPlayer {
                 this.play();
             });
             navigator.mediaSession.setActionHandler('previoustrack', () => {
-                this.prev(); 
+                this.prev();
             });
             navigator.mediaSession.setActionHandler('nexttrack', () => {
                 this.next();
@@ -141,10 +141,10 @@ class AudioPlayer {
                 navigator.mediaSession.playbackState = 'playing';
             }
         });
-        
+
         this.audio.addEventListener('pause', () => {
             if ('mediaSession' in navigator) {
-                navigator.mediaSession.playbackState = 'paused'; 
+                navigator.mediaSession.playbackState = 'paused';
             }
         });
     }
@@ -188,13 +188,36 @@ class PlaylistManager {
         this.uiManager = uiManager;
     }
 
-    addSong(song, event) {
+    async addSong(song, event) {
         try {
             if (event) {
-                event.stopPropagation(); // 阻止事件冒泡
+                event.stopPropagation();
             }
+
             this.playlist.push(song);
             this.savePlaylists();
+
+            // 创建并添加新的歌曲元素
+            const songElement = this.createSongElement(song);
+            songElement.classList.add('adding'); // 添加动画初始类
+
+            const playingList = document.querySelector("#playing-list");
+            playingList.appendChild(songElement);
+
+            // 触发重排以确保动画生效
+            songElement.offsetHeight;
+
+            // 移除添加类以触发动画
+            requestAnimationFrame(() => {
+                songElement.classList.remove('adding');
+                // 添加闪光效果
+                songElement.classList.add('flash');
+
+                // 移除闪光效果
+                setTimeout(() => {
+                    songElement.classList.remove('flash');
+                }, 800);
+            });
         } catch (error) {
             console.error("添加歌曲失败:", error);
         }
@@ -203,18 +226,28 @@ class PlaylistManager {
     removeSong(bvid, event) {
         try {
             if (event) {
-                event.stopPropagation(); // 阻止事件冒泡
+                event.stopPropagation();
             }
-            let index = this.playlist.findIndex((item) => item.bvid === bvid);
+            const songElement = document.querySelector(`#playing-list .song[data-bvid="${bvid}"]`);
+            if (!songElement) return;
 
-            this.playlist.splice(index, 1);
-            this.savePlaylists();
-            // 如果删除的是当前播放的歌曲
-            if (index === this.playingNow) {
-                this.setPlayingNow(Math.min(this.playingNow, this.playlist.length - 1));
-            } else if (index < this.playingNow) {
-                this.playingNow--;
-            }
+            // 添加删除动画
+            songElement.classList.add('removing');
+
+            // 等待动画完成后再删除
+            songElement.addEventListener('transitionend', () => {
+                const index = this.playlist.findIndex((item) => item.bvid === bvid);
+                if (index !== -1) {
+                    this.playlist.splice(index, 1);
+                    this.savePlaylists();
+
+                    if (index === this.playingNow) {
+                        this.setPlayingNow(Math.min(this.playingNow, this.playlist.length - 1));
+                    } else if (index < this.playingNow) {
+                        this.playingNow--;
+                    }
+                }
+            }, { once: true });
         } catch (error) {
             console.error("删除歌曲失败:", error);
         }
@@ -227,44 +260,72 @@ class PlaylistManager {
             }
 
             const song = this.playlist[index];
+            const oldIndex = this.playingNow;
             this.playingNow = index;
 
             // 更新歌词和UI
             this.lyricsPlayer.changeLyrics(song.lyric);
-            this.updateUIForCurrentSong(song);
+
+            // 添加切换动画
+            const oldPlayingElement = document.querySelector("#playing-list .song.playing");
+            const newPlayingElement = document.querySelector(`#playing-list .song[data-bvid="${song.bvid}"]`);
+
+            if (oldPlayingElement) {
+                // 为旧的播放项添加淡出动画
+                oldPlayingElement.style.transition = 'all 0.3s ease';
+                oldPlayingElement.classList.remove("playing");
+                oldPlayingElement.classList.add("fade-out");
+            }
+
+            if (newPlayingElement) {
+                // 为新的播放项添加动画
+                newPlayingElement.classList.add("playing");
+                newPlayingElement.classList.add("flash");
+
+                // 平滑滚动到新的播放项
+                newPlayingElement.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+
+                setTimeout(() => {
+                    newPlayingElement.classList.remove("flash");
+                }, 800);
+            }
+
+            // 添加封面切换动画
+            const coverImg = document.querySelector(".player-content .cover .cover-img");
+            coverImg.style.transition = 'opacity 0.3s ease';
+            coverImg.style.opacity = '0';
+
+            setTimeout(() => {
+                this.updateUIForCurrentSong(song);
+                coverImg.style.opacity = '1';
+            }, 300);
 
             if (replay) {
-                document.querySelector(".player .control .progress .progress-bar .progress-bar-inner").style.width = "0%";
+                const progressBar = document.querySelector(".player .control .progress .progress-bar .progress-bar-inner");
+                progressBar.style.transition = "none";
+                progressBar.style.width = "0%";
+                setTimeout(() => {
+                    progressBar.style.transition = "width 0.1s linear";
+                }, 50);
                 this.audioPlayer.audio.currentTime = 0;
             }
 
+            // 更新媒体会话
             if ('mediaSession' in navigator) {
-                // 裁剪图片为正方形
-                const {url, size} = await cropImageToSquare(song.poster);
-                
+                const { url, size } = await cropImageToSquare(song.poster);
                 navigator.mediaSession.metadata = new MediaMetadata({
                     title: song.title,
                     artist: song.artist,
-                    artwork: [
-                        { src: url, sizes: size, type: 'image/jpeg' }
-                    ]
+                    artwork: [{ src: url, sizes: size, type: 'image/jpeg' }]
                 });
             }
 
-            this.uiManager.renderPlaylist();    
-
-            // 更新播放状态样式
-            let songs = document.querySelectorAll("#playing-list .song");
-            for (let i = 0; i < songs.length; i++) {
-                songs[i].classList.remove("playing");
-            }
-            songs[this.playingNow].classList.add("playing");
-
-            // 尝试播放，如果失败则重试
             await this.tryPlayWithRetry(song);
-
-            // 保存播放列表
             this.savePlaylists();
+
         } catch (error) {
             console.error("设置当前播放失败:", error);
         }
@@ -423,7 +484,7 @@ class FavoriteManager {
         }
 
         // 更新UI
-        const songElements = document.querySelectorAll(`[id="${song.bvid}"]`);
+        const songElements = document.querySelectorAll(`[data-bvid="${song.bvid}"]`);
         songElements.forEach((songElement) => {
             if (songElement) {
                 const loveButton = songElement.querySelector(".controls .love");
@@ -443,7 +504,7 @@ class FavoriteManager {
         this.lovelist.push(song); // 这会触发观察者
 
         // 更新UI
-        const songElement = document.querySelector(`[id="${song.bvid}"]`);
+        const songElement = document.querySelector(`[data-bvid="${song.bvid}"]`);
         if (songElement) {
             const loveButton = songElement.querySelector(".controls .love");
             loveButton.innerHTML = '<i class="bi bi-heart-fill"></i>';
@@ -875,7 +936,7 @@ class LyricsPlayer {
         const parsedData = [];
 
         // 检查是否为传统时间戳格式
-        const isTraditionalFormat = lines.some(line => 
+        const isTraditionalFormat = lines.some(line =>
             line.match(/^\[\d{2}:\d{2}\.\d{2,3}\]/)
         );
 
@@ -941,7 +1002,7 @@ class LyricsPlayer {
         const lineDiv = document.createElement("div");
         lineDiv.className = "lyric-line";
 
-        if (lyricData.chars.length === 1 && 
+        if (lyricData.chars.length === 1 &&
             lyricData.chars[0].text === lyricData.chars[0].text.trim()) {
             const charSpan = document.createElement("span");
             charSpan.className = "char";
@@ -977,7 +1038,7 @@ class LyricsPlayer {
         this.targetTransformY = 0;
 
         this.parsedData.forEach(data => {
-            const element = data.type === "metadata" 
+            const element = data.type === "metadata"
                 ? this.createMetadataElement(data)
                 : this.createLyricElement(data);
             this.scrollWrapper.appendChild(element);
@@ -1237,25 +1298,34 @@ class UIManager {
         });
 
         // 列表焦点效果
-        document.querySelectorAll(".list.focs").forEach((li) => {
-            li.addEventListener("click", () => {
-                let spanFocs = li.querySelectorAll("span.focs")[0],
-                    aCheck = li.querySelectorAll("a.check")[0],
-                    allLinks = li.querySelectorAll("a");
+        document.querySelectorAll("#function-list").forEach((list) => {
+            list.addEventListener("click", (e) => {
+                const clickedItem = e.target.closest('a');
+                if (!clickedItem) return;
 
+                const spanFocs = list.querySelector("span.focs");
+                if (!spanFocs) return;
+
+                // 移除之前的所有选中状态
+                list.querySelectorAll('a').forEach(a => a.classList.remove('check'));
+                // 添加新的选中状态
+                clickedItem.classList.add('check');
+
+                // 显示焦点指示器
                 spanFocs.style.display = "block";
-                if (spanFocs.dataset.type == "abs") {
-                    spanFocs.classList.add("cl");
-                    spanFocs.style.top = aCheck.getBoundingClientRect().top - li.parentElement.getBoundingClientRect().top + "px";
+                spanFocs.classList.add("moving");
+
+                // 设置位置 - 不再使用 transform，直接设置 top
+                if (spanFocs.dataset.type === "abs") {
+                    spanFocs.style.top = clickedItem.offsetTop + 10 + "px";
                 } else {
-                    spanFocs.classList.add("cl");
-                    spanFocs.style.top = aCheck.offsetTop - allLinks[allLinks.length - 1].offsetTop + 5 + "px";
-                    spanFocs.style.left = aCheck.offsetLeft - li.offsetLeft + "px";
+                    spanFocs.style.top = clickedItem.offsetTop + 10 + "px";
+                    spanFocs.style.left = clickedItem.offsetLeft + 10 + "px";
                 }
 
                 setTimeout(() => {
-                    spanFocs.classList.remove("cl");
-                }, 500);
+                    spanFocs.classList.remove("moving");
+                }, 300);
             });
         });
 
@@ -1320,7 +1390,6 @@ class UIManager {
                 }
                 if (deleteBtn) {
                     this.playlistManager.removeSong(song.bvid, e);
-                    this.renderPlaylist();
                 }
             });
 
@@ -1330,7 +1399,7 @@ class UIManager {
     createSongElement(song, bvid, { isLove = true, isDelete = true, isExtract = false } = {}) {
         const div = document.createElement("div");
         div.classList.add("song");
-        div.id = bvid;
+        div.setAttribute('data-bvid', bvid);
 
         const isLoved = window.app.favoriteManager.lovelist.some((item) => item.bvid === song.bvid);
 
@@ -1341,20 +1410,18 @@ class UIManager {
                 <div class="artist"></div>
             </div>
             <div class="controls">
-                ${
-                    isLove
-                        ? `<div class="love">
+                ${isLove
+                ? `<div class="love">
                     <i class="bi bi-heart${isLoved ? "-fill" : ""} ${isLoved ? "loved" : ""}"></i>
                 </div>`
-                        : ""
-                }
-                ${
-                    isDelete
-                        ? `<div class="delete">
+                : ""
+            }
+                ${isDelete
+                ? `<div class="delete">
                     <i class="bi bi-trash"></i>
                 </div>`
-                        : ""
-                }
+                : ""
+            }
             </div>`;
         div.querySelector(".poster").src = song.poster;
         div.querySelector(".name").textContent = isExtract ? extractMusicTitle(song.title) : song.title;
