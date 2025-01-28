@@ -184,21 +184,23 @@ class LyricsPlayer {
     animate() {
         if (!this.scrollWrapper) return;
         const currentTime = this.audio.currentTime * 1000;
-
+        let lastActiveLine = null;
+        let lastActiveIndex = -1;
+    
         this.parsedData.forEach((data, dataIndex) => {
             if (data.type === "lyric") {
                 const line = this.scrollWrapper.children[dataIndex];
                 if (!line) return;
-
+    
                 const chars = Array.from(line.children);
                 let hasActiveLine = false;
                 let allCompleted = true;
-
+    
                 data.chars.forEach((char, index) => {
                     const charElement = chars[index];
                     const charStartTime = char.startTime;
                     const charEndTime = char.startTime + char.duration;
-
+    
                     if (currentTime >= charStartTime && currentTime <= charEndTime) {
                         charElement.classList.add("active");
                         charElement.classList.remove("completed");
@@ -212,22 +214,30 @@ class LyricsPlayer {
                         allCompleted = false;
                     }
                 });
-
+    
                 if (hasActiveLine) {
-                    line.classList.add("active");
-                    this.activeLines.add(dataIndex);
-                    this.scrollToActiveLine(line);
-                } else {
-                    line.classList.remove("active");
-                    this.activeLines.delete(dataIndex);
+                    lastActiveLine = line;
+                    lastActiveIndex = dataIndex;
                 }
-
+    
+                // 先移除所有行的active状态
+                line.classList.remove("active");
+                this.activeLines.delete(dataIndex);
+    
                 if (allCompleted) {
                     this.completedLines.add(dataIndex);
                 }
             }
         });
-
+    
+        // 只激活最后一个活跃行
+        if (lastActiveLine) {
+            lastActiveLine.classList.add("active");
+            this.activeLines.clear();
+            this.activeLines.add(lastActiveIndex);
+            this.scrollToActiveLine(lastActiveLine);
+        }
+    
         this.animationFrame = requestAnimationFrame(() => this.animate());
     }
 

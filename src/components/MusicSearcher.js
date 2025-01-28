@@ -211,6 +211,7 @@ class MusicSearcher {
                         // }
                         const cleanTitle = song.title.replace(/<em class="keyword">|<\/em>/g, "");
                         if (this.playlistManager.playlist.find((item) => item.title === cleanTitle)) {
+                            document.querySelector("#function-list .player").click();
                             return;
                         }
 

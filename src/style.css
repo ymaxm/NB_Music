@@ -4,6 +4,7 @@
 :root {
     --theme-1: #ad6eca;
     --theme-2: #3b91d8;
+    --text: #ffff;
 }
 
 * {
@@ -13,12 +14,17 @@
     user-select: none;
 }
 
+html{
+    width: 100%;
+}
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     background: var(--bgul);
     color: #ffffff;
+    width: 100%;
     height: 100vh;
     overflow: hidden;
+    position: fixed;
 }
 
 /* Title bar styling */
@@ -31,6 +37,7 @@ body {
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    -webkit-app-region: drag;
 }
 
 .titbar .icon {
@@ -55,6 +62,7 @@ body {
     border-radius: 6px;
     margin-left: 4px;
     transition: all 0.2s ease;
+    -webkit-app-region: no-drag;
 }
 
 .wbtg:hover {
