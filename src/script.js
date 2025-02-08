@@ -6,6 +6,8 @@ const UIManager = require("./components/UIManager.js");
 const PlaylistManager = require("./components/PlaylistManager.js");
 const FavoriteManager = require("./components/FavoriteManager.js");
 const MusicSearcher = require("./components/MusicSearcher.js");
+const SettingManager = require("./components/SettingManager.js");
+const MusiclistManager = require("./components/MusiclistManager.js");
 
 class App {
     constructor() {
@@ -16,6 +18,12 @@ class App {
 
     initializeComponents() {
         try {
+            // 创建音乐搜索器
+            this.musicSearcher = new MusicSearcher();
+
+            // 创建设置管理器
+            this.settingManager = new SettingManager();
+
             // 创建播放器组件
             this.audioPlayer = new AudioPlayer(this.playlistManager);
 
@@ -23,7 +31,7 @@ class App {
             this.lyricsPlayer = new LyricsPlayer("暂无歌词，尽情欣赏音乐", this.audioPlayer.audio);
 
             // 创建UI管理器
-            this.uiManager = new UIManager(this.audioPlayer, this.playlistManager, this.favoriteManager, this.musicSearcher);
+            this.uiManager = new UIManager(this.settingManager, this.audioPlayer, this.playlistManager, this.favoriteManager, this.musicSearcher);
 
             // 创建播放列表管理器
             this.playlistManager = new PlaylistManager(this.audioPlayer, this.lyricsPlayer, this.uiManager);
@@ -31,8 +39,8 @@ class App {
             // 创建收藏管理器
             this.favoriteManager = new FavoriteManager(this.playlistManager, this.uiManager);
 
-            // 创建音乐搜索器
-            this.musicSearcher = new MusicSearcher();
+            // 创建歌单管理器
+            this.musiclistManager = new MusiclistManager(this.playlistManager);
 
             // 更新组件间的引用
             this.audioPlayer.playlistManager = this.playlistManager;
@@ -43,6 +51,10 @@ class App {
             this.musicSearcher.uiManager = this.uiManager;
             this.musicSearcher.playlistManager = this.playlistManager;
             this.musicSearcher.favoriteManager = this.favoriteManager;
+            this.playlistManager.settingManager = this.settingManager;
+            this.playlistManager.uiManager = this.uiManager;
+            this.playlistManager.musicSearcher = this.musicSearcher;
+            this.playlistManager.musiclistManager = this.musiclistManager;
 
             // 暴露全局引用
             window.app = this;

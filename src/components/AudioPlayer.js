@@ -6,6 +6,7 @@ class AudioPlayer {
         this.audio.autoplay = false;
         this.audio.loop = false;
         this.audio.volume = 1;
+        this.volumeInterval = null;
 
         this.audio.addEventListener("ended", () => {
             if (this.audio.loop) {
@@ -45,31 +46,39 @@ class AudioPlayer {
     }
 
     async audioPlay() {
+        // 清除现有间隔
+        if (this.volumeInterval) {
+            clearInterval(this.volumeInterval);
+            this.volumeInterval = null;
+        }
+
         await this.audio.play();
-        const int = window.setInterval(
-            (() => {
-                this.audio.volume += 0.01;
-                if (this.audio.volume >= 0.98) {
-                    this.audio.volume = 1;
-                    window.clearInterval(int);
-                }
-            }).bind(this),
-            6
-        );
+        this.volumeInterval = window.setInterval(() => {
+            this.audio.volume += 0.01;
+            if (this.audio.volume >= 0.98) {
+                this.audio.volume = 1;
+                clearInterval(this.volumeInterval);
+                this.volumeInterval = null;
+            }
+        }, 6);
     }
 
     audioPause() {
-        const int = window.setInterval(
-            (() => {
-                this.audio.volume -= 0.01;
-                if (this.audio.volume <= 0.02) {
-                    this.audio.volume = 0;
-                    this.audio.pause();
-                    window.clearInterval(int);
-                }
-            }).bind(this),
-            6
-        );
+        // 清除现有间隔
+        if (this.volumeInterval) {
+            clearInterval(this.volumeInterval);
+            this.volumeInterval = null;
+        }
+
+        this.volumeInterval = window.setInterval(() => {
+            this.audio.volume -= 0.01;
+            if (this.audio.volume <= 0.02) {
+                this.audio.volume = 0;
+                this.audio.pause();
+                clearInterval(this.volumeInterval);
+                this.volumeInterval = null;
+            }
+        }, 6);
     }
 
     async play() {
@@ -89,12 +98,26 @@ class AudioPlayer {
 
     prev() {
         if (this.playlistManager.playingNow > 0) {
+            // 重置音量和清除间隔
+            if (this.volumeInterval) {
+                clearInterval(this.volumeInterval);
+                this.volumeInterval = null;
+            }
+            this.audio.volume = 1; // 立即重置音量
+
             this.playlistManager.setPlayingNow(this.playlistManager.playingNow - 1);
         }
     }
 
     next() {
         if (this.playlistManager.playingNow < this.playlistManager.playlist.length - 1) {
+            // 重置音量和清除间隔
+            if (this.volumeInterval) {
+                clearInterval(this.volumeInterval);
+                this.volumeInterval = null;
+            }
+            this.audio.volume = 1; // 立即重置音量
+
             this.playlistManager.setPlayingNow(this.playlistManager.playingNow + 1);
         }
     }

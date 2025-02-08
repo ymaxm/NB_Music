@@ -2,19 +2,88 @@ const { ipcRenderer } = require("electron");
 const { extractMusicTitle } = require("../utils.js");
 
 class UIManager {
-    constructor(audioPlayer, playlistManager, favoriteManager, musicSearcher) {
+    constructor(settingManager, audioPlayer, playlistManager, favoriteManager, musicSearcher) {
         this.audioPlayer = audioPlayer;
         this.playlistManager = playlistManager;
         this.favoriteManager = favoriteManager;
         this.musicSearcher = musicSearcher;
         this.isMaximized = false;
+        this.settingManager = settingManager;
         this.minimizeBtn = document.getElementById("maximize");
 
         this.initializeEvents();
         this.initializePlayerControls();
         this.initializePageEvents();
+        this.initializeSettings();
     }
 
+    initializeSettings() {
+        // 主题切换事件
+        this.settingManager.addListener('theme', (newValue, oldValue) => {
+            if (newValue == 'auto') {
+                newValue = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            }
+            document.querySelector('html').classList.remove(oldValue);
+            document.querySelector('html').classList.add(newValue);
+        });
+
+        // 背景切换事件
+        this.settingManager.addListener('background', async (newValue, oldValue) => {
+            if (newValue === 'none') {
+                const oldVideo = document.querySelector('video');
+                if (oldVideo) oldVideo.remove();
+                document.querySelector('html').style.removeProperty('--bgul');
+            }
+            if (newValue === 'cover') {
+                const oldVideo = document.querySelector('video');
+                if (oldVideo) oldVideo.remove();
+                const savedPlaylist = localStorage.getItem("nbmusic_playlist");
+                const currentSong = JSON.parse(savedPlaylist)[this.settingManager.getSetting('playingNow')];
+                document.querySelector('html').style.setProperty('--bgul', `url(${currentSong.poster})`);
+            }
+            if (newValue === 'video' && oldValue !== 'video') {  
+                // 移除旧视频
+                const oldVideo = document.querySelector('video');
+                if (oldVideo) oldVideo.remove();
+                const savedPlaylist = localStorage.getItem("nbmusic_playlist");
+
+                const currentSong = JSON.parse(savedPlaylist)[this.settingManager.getSetting('playingNow')];
+                const videoUrl = currentSong.video;
+                if (videoUrl) {
+                    const video = document.createElement('video');
+                    video.autoplay = true;
+                    video.loop = true;
+                    video.muted = true;
+                    video.style.position = 'absolute';
+                    video.style.width = '100%';
+                    video.style.height = '100%';
+                    video.style.zIndex = '-1';
+                    video.style.bottom = '0';
+                    video.style.objectFit = 'cover';
+                    video.src = videoUrl;
+
+                    document.querySelector('body').appendChild(video);
+                }
+
+            }
+        });
+
+        const settingContainer = document.querySelector(".content>.setting");
+        settingContainer.addEventListener("click", (e) => {
+            const setting = e.target;
+            if (setting.dataset.key) {
+                this.settingManager.setSetting(setting.dataset.key, setting.dataset.value);
+            }
+        });
+        const settings = this.settingManager.settings;
+        Object.keys(settings).forEach((key) => {
+            const value = settings[key];
+            const element = settingContainer.querySelector(`[data-key="${key}"][data-value="${value}"]`);
+            if (element) {
+                element.click();
+            }
+        });
+    }
     initializePlayerControls() {
         // 进度条控制
         const progressBar = document.querySelector(".progress-bar");
@@ -188,9 +257,59 @@ class UIManager {
             }
         });
 
-        // 主题切换事件
-        document.querySelector(".dock.theme").addEventListener("click", () => {
-            this.toggleTheme();
+        document.querySelectorAll('nav').forEach(nav => {
+            // 生成唯一标识
+            const navId = nav.dataset.navId || `nav-${Math.random().toString(36).slice(2, 6)}`;
+            nav.dataset.navId = navId;
+        
+            nav.querySelectorAll('a').forEach(link => {
+                link.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    
+                    // 检查浏览器是否支持 View Transitions API
+                    if (!document.startViewTransition) {
+                        console.warn('Browser does not support View Transitions API');
+                        // 降级处理
+                        const activeLink = nav.querySelector('.active');
+                        activeLink?.classList.remove('active');
+                        link.classList.add('active');
+                        return;
+                    }
+        
+                    // 避免重复点击
+                    if (link.classList.contains('active')) return;
+        
+                    const activeLink = nav.querySelector('.active');
+        
+                    try {
+                        // 设置动态 view-transition-name
+                        if (activeLink) {
+                            activeLink.style.viewTransitionName = `${navId}-old`;
+                        }
+                        link.style.viewTransitionName = `${navId}-new`;
+        
+                        const transition = document.startViewTransition(() => {
+                            activeLink?.classList.remove('active');
+                            link.classList.add('active');
+                        });
+        
+                        // 等待过渡完成
+                        await transition.finished;
+                    } catch (error) {
+                        console.error('View transition failed:', error);
+                    } finally {
+                        // 清理 view-transition-name
+                        if (activeLink) {
+                            activeLink.style.viewTransitionName = '';
+                        }
+                        link.style.viewTransitionName = '';
+                    }
+                });
+            });
+        });
+        document.querySelector(".listname .controls .rename").addEventListener("click", (e) => {
+            e.stopPropagation();
+            this.playlistManager.renamePlaylist();
         });
     }
 
@@ -200,16 +319,6 @@ class UIManager {
         this.musicSearcher.searchMusic(keyword);
     }
 
-    toggleTheme() {
-        document.querySelector(".dock.theme").classList.toggle("dk");
-        document.documentElement.classList.toggle("dark");
-
-        if (document.documentElement.classList.contains("dark")) {
-            localStorage.setItem("theme", "dark");
-        } else {
-            localStorage.setItem("theme", "light");
-        }
-    }
     renderPlaylist() {
         document.querySelector("#listname").textContent = this.playlistManager.playlistName;
         const playlistElement = document.querySelector("#playing-list");
@@ -262,20 +371,18 @@ class UIManager {
                 <div class="artist"></div>
             </div>
             <div class="controls">
-                ${
-                    isLove
-                        ? `<div class="love">
+                ${isLove
+                ? `<div class="love">
                     <i class="bi bi-heart${isLoved ? "-fill" : ""} ${isLoved ? "loved" : ""}"></i>
                 </div>`
-                        : ""
-                }
-                ${
-                    isDelete
-                        ? `<div class="delete">
+                : ""
+            }
+                ${isDelete
+                ? `<div class="delete">
                     <i class="bi bi-trash"></i>
                 </div>`
-                        : ""
-                }
+                : ""
+            }
             </div>`;
         div.querySelector(".poster").src = song.poster;
         div.querySelector(".name").textContent = isExtract ? extractMusicTitle(song.title) : song.title;

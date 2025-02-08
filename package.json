@@ -16,7 +16,7 @@
     "license": "GPL-3.0-only",
     "devDependencies": {
         "@eslint/js": "^9.18.0",
-        "electron": "^33.3.1",
+        "electron": "34.0.2",
         "electron-builder": "^25.1.8",
         "eslint": "^9.18.0",
         "globals": "^15.14.0"
@@ -24,6 +24,7 @@
     "dependencies": {
         "NeteaseCloudMusicApi": "^4.25.0",
         "axios": "^1.7.9",
+        "bootstrap-icons": "^1.11.3",
         "electron-reload": "^2.0.0-alpha.1",
         "electron-store": "8.2.0",
         "md5": "^2.3.0",
@@ -66,5 +67,6 @@
                 "repo": "NB_Music"
             }
         ]
-    }
+    },
+    "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }

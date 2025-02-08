@@ -227,12 +227,15 @@ class MusicSearcher {
                             url = urls[1];
                         }
 
+                        const videoUrl = await this.getBilibiliVideoUrl(song.bvid, urls[2]);
                         const newSong = {
                             title: cleanTitle,
                             artist: song.artist,
                             audio: url,
                             poster: "https:" + song.pic,
                             bvid: song.bvid,
+                            cid: urls[2],
+                            video: videoUrl,
                             lyric: await this.getLyrics(keyword)
                         };
 
@@ -287,7 +290,7 @@ class MusicSearcher {
         }
 
         const bestAudio = audioStream[0];
-        return [bestAudio.baseUrl, bestAudio.backupUrl];
+        return [bestAudio.baseUrl, bestAudio.backupUrl, cid];
     }
 
     async getLyrics(songName) {
@@ -312,6 +315,29 @@ class MusicSearcher {
             return yrcLyrics.yrc ? yrcLyrics.yrc.lyric : yrcLyrics.lrc ? yrcLyrics.lrc.lyric : "暂无歌词，尽情欣赏音乐";
         } catch {
             /* empty */
+        }
+    }
+    async getBilibiliVideoUrl(bvid, cid) {
+        try {
+            const response = await fetch(`https://api.bilibili.com/x/player/playurl?bvid=${bvid}&cid=${cid}&qn=0&fnval=80&fnver=0&fourk=1`, {
+ 
+            });
+            
+            if (!response.ok) {
+                throw new Error('获取视频URL失败');
+            }
+            
+            const data = await response.json();
+            
+            if (data.code !== 0) {
+                throw new Error(data.message);
+            }
+            
+            // 返回第一个可用的视频URL
+            return data.data.dash.video[0].baseUrl;
+        } catch (error) {
+            console.error('获取B站视频URL失败:', error);
+            return null;
         }
     }
 }

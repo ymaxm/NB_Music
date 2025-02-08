@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-cn">
+<html lang="zh-cn" class="dark">
 
 <head>
   <meta charset="UTF-8" />
@@ -11,8 +11,14 @@
 
 <body>
   <div class="titbar" style="filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 1));">
-    <img src="../icons/NB Music.png" class="icon">
-    <p>NB Music</p>
+    <div style="display: flex;">
+      <img src="../icons/NB Music.png" class="icon">
+      <p>NB Music</p>
+    </div>
+
+    <div class="search">
+      <input class="input search-music" type="text" placeholder="搜索音乐" />
+    </div>
     <div>
       <a class="a wbtg" id="minimize" onclick=""><i class="bi bi-dash-lg"></i></a>
       <a class="a wbtg max" id="maximize" onclick=""><i class="bi bi-app"></i></a>
@@ -68,9 +74,6 @@
         </g>
       </svg>
     </div>
-    <div class="search">
-      <input class="input search-music" type="text" placeholder="搜索音乐" />
-    </div>
     <div class="sidebar">
       <list class="list focs" id="function-list">
         <a class="player check" data-page=".player"><i class="bi bi-music-player"></i>&nbsp;播放</a>
@@ -86,9 +89,6 @@
             <div class="rename">
               <i class="bi bi-pencil-square"></i>
             </div>
-            <div class="add">
-              <i class="bi bi-plus-circle"></i>
-            </div>
           </div>
         </div>
         <list class="list" id="playing-list">
@@ -98,8 +98,8 @@
             <div class="artist"></div>
           </div>
           <div class="controls">
-            <div class="love" onclick="love_song(id,event)"><i class="bi bi-heart"></i></div>
-            <div class="delete" onclick="delete_song(id,event)"><i class="bi bi-trash"></i></div>
+            <div class="love"><i class="bi bi-heart"></i></div>
+            <div class="delete"><i class="bi bi-trash"></i></div>
           </div>
         </list>
       </div>
@@ -126,15 +126,18 @@
               </div>
               <div class="play played" data-action="play">
                 <div class="pause">
-                    <div class="left"></div>
-                    <div class="right"></div>
+                  <div class="left"></div>
+                  <div class="right"></div>
                 </div>
                 <div class="play">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" fill="transparent" class="bi bi-play-fill" viewBox="0 0 16 16">
-                        <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393" />
-                    </svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="90" height="100" fill="transparent"
+                    class="bi bi-play-fill" viewBox="0 0 16 16">
+                    <path transform="translate(3,3)"
+                      d="m7.596 5.697-4.363 2.692c-.34.213-.833-.066-.833-.497V2.308c0-.43.492-.71.833-.496l4.363 2.692a.502.502 0 0 1 0 1.193">
+                    </path>
+                  </svg>
                 </div>
-            </div>
+              </div>
               <div class="nr next" data-action="next">
                 <i class="bi bi-arrow-right"></i>
               </div>
@@ -149,16 +152,23 @@
         </list>
       </div>
       <div class="music-list hide">
-        <div class="music-list-info">
-          <img src="../img/NB_Music.png"></img>
-          <h3>歌单名</h3>
-          <button class="btn">播放全部</button>
-          <ul></ul>
-        </div>
-        <div class="">
-          <div class="menu"></div>
-          <input class="search-music-in-list" type="text" placeholder="搜索音乐" />
-          <button class="search"></button>
+        <div class="title">歌单</div>
+        <div class="music-list-content">
+          <div class="playlist-section">
+            <div class="section-header">
+              <h2>我的歌单</h2>
+              <button id="newPlaylist">新建歌单</button>
+            </div>
+            <ul id="playlistList" class="list"></ul>
+          </div>
+
+          <div class="song-section">
+            <div class="section-header">
+              <h2>歌曲列表</h2>
+              播放歌单后搜索歌曲以添加
+            </div>
+            <ul id="songList" class="list"></ul>
+          </div>
         </div>
       </div>
       <div class="search-result hide">
@@ -186,9 +196,43 @@
       </div>
       <div class="setting hide">
         <div class="title">设置</div>
-        <div class="setting-content"></div>
+        <div class="setting-content">
+          <div class="setting-item">
+            <div class="setting-info">
+              <i class="bi bi-circle-half"></i>
+              <div class="words">
+                <div class="setting-name">主题</div>
+                <div class="setting-descrition">选择是否开启深色模式</div>
+              </div>
+            </div>
+            <div class="setting-value">
+              <nav data-nav-id="nav1">
+                <a class="active" data-key="theme" data-value="dark">深色</a>
+                <a data-key="theme" data-value="light">浅色</a>
+                <a data-key="theme" data-value="auto">跟随系统</a>
+              </nav>
+            </div>
+          </div>
+          <div class="setting-item">
+            <div class="setting-info">
+              <i class="bi bi-image"></i>
+              <div class="words">
+                <div class="setting-name">背景</div>
+                <div class="setting-descrition">设置应用程序的背景</div>
+              </div>
+            </div>
+            <div class="setting-value">
+              <nav data-nav-id="nav2">
+                <a class="active" data-key="background" data-value="cover">视频封面</a>
+                <a data-key="background" data-value="video">动态视频</a>
+                <a data-key="background" data-value="none">无</a>
+              </nav>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
+  </div>
 </body>
 <script src="./script.js"></script>
 
