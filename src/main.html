@@ -74,7 +74,7 @@
         </g>
       </svg>
     </div>
-    <div class="sidebar">
+    <div class="sidebar" style="display: flex !important; flex-direction: column; height: 100%;">
       <list class="list focs" id="function-list">
         <a class="player check" data-page=".player"><i class="bi bi-music-player"></i>&nbsp;播放</a>
         <a class="love-list" data-page=".love-list"><i class="bi bi-heart"></i>&nbsp;收藏</a>
@@ -82,7 +82,7 @@
         <a class="setting" data-page=".setting"><i class="bi bi-gear"></i>&nbsp;设置</a>
         <span class="focs" style="top: -55px; left: 0px;"></span>
       </list>
-      <div class="playing-list">
+      <div class="playing-list" style="display: flex; flex-direction: column; min-height: 0; max-height: 100%;">
         <div class="listname" style="padding: 2px 20px;">
           <div id="listname">默认歌单</div>
           <div class="controls">
@@ -91,15 +91,11 @@
             </div>
           </div>
         </div>
-        <list class="list" id="playing-list">
+        <list class="list" id="playing-list" style="display: block !important;">
           <div class="song">
             <img class="poster" alt="Poster image">
             <div class="name"></div>
             <div class="artist"></div>
-          </div>
-          <div class="controls">
-            <div class="love"><i class="bi bi-heart"></i></div>
-            <div class="delete"><i class="bi bi-trash"></i></div>
           </div>
         </list>
       </div>
