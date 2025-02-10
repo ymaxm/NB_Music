@@ -1,6 +1,10 @@
 class SettingManager {
     constructor() {
-        this.settings = {};
+        this.settings = {
+            theme: 'dark',
+            background: 'none',
+            lyricSearchType: 'auto' // 添加新的设置项
+        };
         this.listeners = new Map();
         this.STORAGE_KEY = 'app_settings';
         this.loadSettings();

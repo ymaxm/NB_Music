@@ -132,22 +132,27 @@ class PlaylistManager {
             if (index < 0 || index >= this.playlist.length) {
                 throw new Error("无效的播放索引");
             }
-
+    
+            // 先暂停当前音频
+            await this.audioPlayer.audio.pause();
+            
             this.settingManager.setSetting("playingNow", index);
             const song = this.playlist[index];
             this.playingNow = index;
-
+    
+            // 更新歌词
             this.lyricsPlayer.changeLyrics(song.lyric);
-
+    
+            // 更新播放列表UI
             const oldPlayingElement = document.querySelector("#playing-list .song.playing");
             const newPlayingElement = document.querySelector(`#playing-list .song[data-bvid="${song.bvid}"]`);
-
+    
             if (oldPlayingElement) {
                 oldPlayingElement.style.transition = 'all 0.3s ease';
                 oldPlayingElement.classList.remove("playing");
                 oldPlayingElement.classList.add("fade-out");
             }
-
+    
             if (newPlayingElement) {
                 newPlayingElement.classList.add("playing");
                 newPlayingElement.classList.add("flash");
@@ -159,16 +164,19 @@ class PlaylistManager {
                     newPlayingElement.classList.remove("flash");
                 }, 800);
             }
-
+    
+            // 更新封面图片
             const coverImg = document.querySelector(".player-content .cover .cover-img");
             coverImg.style.transition = 'opacity 0.3s ease';
             coverImg.style.opacity = '0';
-
+    
+            // 延迟更新UI，让过渡动画更流畅
             setTimeout(() => {
                 this.updateUIForCurrentSong(song);
                 coverImg.style.opacity = '1';
             }, 300);
-
+    
+            // 重置播放进度
             if (replay) {
                 const progressBar = document.querySelector(".player .control .progress .progress-bar .progress-bar-inner");
                 progressBar.style.transition = "none";
@@ -178,13 +186,15 @@ class PlaylistManager {
                 }, 50);
                 this.audioPlayer.audio.currentTime = 0;
             }
-
+    
+            // 重置音量设置
             if (this.audioPlayer.volumeInterval) {
                 clearInterval(this.audioPlayer.volumeInterval);
                 this.audioPlayer.volumeInterval = null;
             }
             this.audioPlayer.audio.volume = 1;
-
+    
+            // 更新媒体会话信息
             if ('mediaSession' in navigator) {
                 const { url, size } = await this.cropImageToSquare(song.poster);
                 navigator.mediaSession.metadata = new MediaMetadata({
@@ -193,15 +203,17 @@ class PlaylistManager {
                     artwork: [{ src: url, sizes: size, type: 'image/jpeg' }]
                 });
             }
-
+    
+            // 开始播放新音频
             await this.tryPlayWithRetry(song);
             this.savePlaylists();
-
+    
         } catch (error) {
             console.error("设置当前播放失败:", error);
+            // 发生错误时重置播放按钮状态
+            document.querySelector(".control>.buttons>.play").classList = "play paused";
         }
     }
-
     async tryPlayWithRetry(song, maxRetries = 2) {
         let lastError;
         
@@ -321,6 +333,10 @@ class PlaylistManager {
             localStorage.setItem("nbmusic_playlist", JSON.stringify(this.playlist));
             localStorage.setItem("nbmusic_playlistname", this.playlistName);
             localStorage.setItem("nbmusic_url_expiry", JSON.stringify(Array.from(this.urlExpiryTimes.entries())));
+            // 新增：存储当前歌单ID
+            if (this.currentPlaylistId) {
+                localStorage.setItem("nbmusic_current_playlist_id", this.currentPlaylistId);
+            }
         } catch (error) {
             console.error("保存播放列表失败:", error);
         }
@@ -364,6 +380,11 @@ class PlaylistManager {
                 }
             }
     
+            const savedPlaylistId = localStorage.getItem("nbmusic_current_playlist_id");
+            if (savedPlaylistId) {
+                this.currentPlaylistId = savedPlaylistId;
+            }
+            
             // 更新 UI
             if (this.uiManager) {
                 this.uiManager.renderPlaylist();

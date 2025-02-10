@@ -236,7 +236,10 @@ class MusicSearcher {
                             bvid: song.bvid,
                             cid: urls[2],
                             video: videoUrl,
-                            lyric: await this.getLyrics(keyword)
+                            // 根据设置决定是否显示歌词搜索对话框
+                            lyric: await (this.settingManager.getSetting('lyricSearchType') === 'custom' 
+                                ? this.showLyricSearchDialog(cleanTitle)
+                                : this.getLyrics(keyword))
                         };
 
                         this.playlistManager.addSong(newSong);
@@ -339,6 +342,63 @@ class MusicSearcher {
             console.error('获取B站视频URL失败:', error);
             return null;
         }
+    }
+    async showLyricSearchDialog(songTitle) {
+        return new Promise((resolve) => {
+            const dialog = document.getElementById('lyricSearchDialog');
+            const titleDiv = document.getElementById('currentSongTitle');
+            const keywordInput = document.getElementById('lyricKeyword');
+            const skipBtn = document.getElementById('skipLyric');
+            const confirmBtn = document.getElementById('confirmLyric');
+    
+            // 显示当前歌曲信息
+            titleDiv.textContent = songTitle;
+            keywordInput.value = songTitle;
+            dialog.classList.remove('hide');
+    
+            const handleSkip = () => {
+                cleanup();
+                resolve("暂无歌词，尽情欣赏音乐");
+            };
+    
+            const handleConfirm = async () => {
+                const keyword = keywordInput.value.trim();
+                cleanup();
+                if (keyword) {
+                    try {
+                        const lyric = await this.getLyrics(keyword);
+                        resolve(lyric);
+                    } catch (error) {
+                        resolve("暂无歌词，尽情欣赏音乐");
+                    }
+                } else {
+                    resolve("暂无歌词，尽情欣赏音乐");
+                }
+            };
+    
+            const handleKeydown = (e) => {
+                if (e.key === 'Enter') {
+                    handleConfirm();
+                } else if (e.key === 'Escape') {
+                    handleSkip();
+                }
+            };
+    
+            const cleanup = () => {
+                dialog.classList.add('hide');
+                skipBtn.removeEventListener('click', handleSkip);
+                confirmBtn.removeEventListener('click', handleConfirm);
+                keywordInput.removeEventListener('keydown', handleKeydown);
+            };
+    
+            skipBtn.addEventListener('click', handleSkip);
+            confirmBtn.addEventListener('click', handleConfirm);
+            keywordInput.addEventListener('keydown', handleKeydown);
+    
+            // 聚焦输入框
+            keywordInput.focus();
+            keywordInput.select();
+        });
     }
 }
 
