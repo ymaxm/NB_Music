@@ -353,6 +353,35 @@ body {
     overflow: hidden;
 }
 
+@keyframes loading {
+    from {
+        left: -50%;
+    }
+
+    to {
+        left: 100%;
+    }
+}
+
+@keyframes loading {
+    from {
+        left: -50%;
+    }
+
+    to {
+        left: 100%;
+    }
+}
+
+.progress-bar-inner.loading {
+    width: 30% !important;
+    background: linear-gradient(90deg,
+            rgba(var(--theme-1), 0.3),
+            rgba(var(--theme-2), 0.8),
+            rgba(var(--theme-1), 0.3));
+    animation: loading 1.5s ease-in-out infinite;
+}
+
 .progress-bar-inner {
     height: 100%;
     background: linear-gradient(0deg, var(--theme-1), var(--theme-2));
@@ -624,7 +653,7 @@ i:hover {
     display: grid;
     grid-template-columns: 48px 1fr auto;
     align-items: center;
-    gap: 12px;
+    gap: 5px;
     padding: 8px 12px;
     border-radius: 8px;
     transition: background-color 0.2s ease;
@@ -633,6 +662,14 @@ i:hover {
     will-change: transform, opacity;
     transform: translateZ(0);
 }
+
+[data-title-mode="auto"] .info .name,
+[data-title-mode="auto"] .info .artist {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 
 .song:hover {
     background-color: var(--border-1);
@@ -650,6 +687,9 @@ i:hover {
     flex-direction: column;
     gap: 4px;
     text-align: left;
+    flex: 1;
+    min-width: 0; 
+    padding-right: 8px;
 }
 
 .song .name {
@@ -664,8 +704,9 @@ i:hover {
 
 .song .controls {
     display: flex;
-    gap: 16px;
+    gap: 5px;
     opacity: 0;
+    flex-shrink: 0;
     transition: opacity 0.2s ease;
 }
 
@@ -954,6 +995,7 @@ i.loved {
 .char {
     transition: all 0.2s ease;
     display: inline-block;
+    white-space: pre;
 }
 
 .char.active {
@@ -1738,7 +1780,7 @@ input[type="text"]:focus,
 
 /* 选中的选项 */
 .input-group select option:checked {
-    background: linear-gradient(90deg, var(--theme-1), var(--theme-2));
+    background: var(--theme-1);
     color: white;
 }
 
@@ -1768,12 +1810,14 @@ input[type="text"]:focus,
 
 /* 浅色主题下的 nav 样式 */
 :root.light nav {
-    background-color: var(--rgba-4); /* 使用浅色背景 */
+    background-color: var(--rgba-4);
+    /* 使用浅色背景 */
     border: 1px solid var(--border-1);
 }
 
 :root.light nav a {
-    color: var(--text); /* 使用主题文字颜色 */
+    color: var(--text);
+    /* 使用主题文字颜色 */
 }
 
 :root.light nav a::before {
@@ -1790,7 +1834,8 @@ input[type="text"]:focus,
 
 /* 选中状态 */
 :root.light nav a.active {
-    color: #fff; /* 选中时文字颜色为白色,确保可读性 */
+    color: #fff;
+    /* 选中时文字颜色为白色,确保可读性 */
 }
 
 /* 动画过渡效果保持不变 */

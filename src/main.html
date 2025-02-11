@@ -33,6 +33,45 @@
     </div>
   </div>
   <div class="mica">
+    <div id="importDialog" class="dialog hide">
+      <h2>从B站收藏夹导入</h2>
+      <div class="dialog-content">
+        <div class="input-group">
+          <label for="favLink">收藏夹链接或ID:</label>
+          <input type="text" id="favLink" placeholder="输入收藏夹链接或ID">
+        </div>
+        <div class="input-group">
+          <label for="customLyricSearch">自定义歌词搜索:</label>
+          <select id="lyricSearchType">
+            <option value="auto">使用视频标题自动搜索</option>
+            <option value="custom">手动输入搜索关键词</option>
+          </select>
+        </div>
+      </div>
+      <div class="dialog-footer">
+        <button id="cancelImport">取消</button>
+        <button id="confirmImport">导入</button>
+      </div>
+    </div>
+
+    <!-- 添加歌词搜索对话框 -->
+    <div id="lyricSearchDialog" class="dialog hide">
+      <h2>输入歌词搜索关键词</h2>
+      <div class="dialog-content">
+        <div class="input-group">
+          <label>当前导入歌曲:</label>
+          <div id="currentSongTitle"></div>
+        </div>
+        <div class="input-group">
+          <label for="lyricKeyword">搜索关键词:</label>
+          <input type="text" id="lyricKeyword" placeholder="输入关键词搜索歌词">
+        </div>
+      </div>
+      <div class="dialog-footer">
+        <button id="skipLyric">跳过</button>
+        <button id="confirmLyric">确认</button>
+      </div>
+    </div>
     <div class="a dock theme dk" data-descp="hide">
       <svg viewBox="0,0,307,307" class="light" xmlns="http://www.w3.org/2000/svg"
         xmlns:xlink="http://www.w3.org/1999/xlink" overflow="hidden">
@@ -162,45 +201,6 @@
             </div>
             <ul id="playlistList" class="list"></ul>
           </div>
-          <div id="importDialog" class="dialog hide">
-            <h2>从B站收藏夹导入</h2>
-            <div class="dialog-content">
-              <div class="input-group">
-                <label for="favLink">收藏夹链接或ID:</label>
-                <input type="text" id="favLink" placeholder="输入收藏夹链接或ID">
-              </div>
-              <div class="input-group">
-                <label for="customLyricSearch">自定义歌词搜索:</label>
-                <select id="lyricSearchType">
-                  <option value="auto">使用视频标题自动搜索</option>
-                  <option value="custom">手动输入搜索关键词</option>
-                </select>
-              </div>
-            </div>
-            <div class="dialog-footer">
-              <button id="cancelImport">取消</button>
-              <button id="confirmImport">导入</button>
-            </div>
-          </div>
-
-          <!-- 添加歌词搜索对话框 -->
-          <div id="lyricSearchDialog" class="dialog hide">
-            <h2>输入歌词搜索关键词</h2>
-            <div class="dialog-content">
-              <div class="input-group">
-                <label>当前导入歌曲:</label>
-                <div id="currentSongTitle"></div>
-              </div>
-              <div class="input-group">
-                <label for="lyricKeyword">搜索关键词:</label>
-                <input type="text" id="lyricKeyword" placeholder="输入关键词搜索歌词">
-              </div>
-            </div>
-            <div class="dialog-footer">
-              <button id="skipLyric">跳过</button>
-              <button id="confirmLyric">确认</button>
-            </div>
-          </div>
           <div class="song-section">
             <div class="section-header">
               <h2>歌曲列表</h2>
@@ -280,6 +280,22 @@
               <nav data-nav-id="nav3">
                 <a class="active" data-key="lyricSearchType" data-value="auto">自动搜索</a>
                 <a data-key="lyricSearchType" data-value="custom">手动输入</a>
+              </nav>
+            </div>
+          </div>
+          <div class="setting-item">
+            <div class="setting-info">
+              <i class="bi bi-filter"></i>
+              <div class="words">
+                <div class="setting-name">标题处理</div>
+                <div class="setting-descrition">如何显示歌曲标题(仅作用在侧边栏)</div>
+              </div>
+            </div>
+            <div class="setting-value">
+              <nav data-nav-id="nav3">
+                <a data-key="extractTitle" data-value="on">提取关键词</a>
+                <a class="active" data-key="extractTitle" data-value="off">完整显示</a>
+                <a data-key="extractTitle" data-value="auto">直接截断</a>
               </nav>
             </div>
           </div>

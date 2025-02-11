@@ -55,6 +55,7 @@ class App {
             this.playlistManager.uiManager = this.uiManager;
             this.playlistManager.musicSearcher = this.musicSearcher;
             this.playlistManager.musiclistManager = this.musiclistManager;
+            this.musicSearcher.settingManager = this.settingManager;
 
             // 暴露全局引用
             window.app = this;

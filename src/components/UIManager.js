@@ -41,7 +41,7 @@ class UIManager {
                 const currentSong = JSON.parse(savedPlaylist)[this.settingManager.getSetting('playingNow')];
                 document.querySelector('html').style.setProperty('--bgul', `url(${currentSong.poster})`);
             }
-            if (newValue === 'video' && oldValue !== 'video') {  
+            if (newValue === 'video' && oldValue !== 'video') {
                 // 移除旧视频
                 const oldVideo = document.querySelector('video');
                 if (oldVideo) oldVideo.remove();
@@ -66,6 +66,9 @@ class UIManager {
                 }
 
             }
+        });
+        this.settingManager.addListener('extractTitle', (newValue, oldValue) => {
+            this.renderPlaylist();
         });
 
         const settingContainer = document.querySelector(".content>.setting");
@@ -261,11 +264,11 @@ class UIManager {
             // 生成唯一标识
             const navId = nav.dataset.navId || `nav-${Math.random().toString(36).slice(2, 6)}`;
             nav.dataset.navId = navId;
-        
+
             nav.querySelectorAll('a').forEach(link => {
                 link.addEventListener('click', async (e) => {
                     e.preventDefault();
-                    
+
                     // 检查浏览器是否支持 View Transitions API
                     if (!document.startViewTransition) {
                         console.warn('Browser does not support View Transitions API');
@@ -275,24 +278,24 @@ class UIManager {
                         link.classList.add('active');
                         return;
                     }
-        
+
                     // 避免重复点击
                     if (link.classList.contains('active')) return;
-        
+
                     const activeLink = nav.querySelector('.active');
-        
+
                     try {
                         // 设置动态 view-transition-name
                         if (activeLink) {
                             activeLink.style.viewTransitionName = `${navId}-old`;
                         }
                         link.style.viewTransitionName = `${navId}-new`;
-        
+
                         const transition = document.startViewTransition(() => {
                             activeLink?.classList.remove('active');
                             link.classList.add('active');
                         });
-        
+
                         // 等待过渡完成
                         await transition.finished;
                     } catch (error) {
@@ -320,6 +323,9 @@ class UIManager {
     }
 
     renderPlaylist() {
+        if (!this.playlistManager) {
+            return;
+        }
         document.querySelector("#listname").textContent = this.playlistManager.playlistName;
         const playlistElement = document.querySelector("#playing-list");
         playlistElement.innerHTML = "";
@@ -385,7 +391,22 @@ class UIManager {
             }
             </div>`;
         div.querySelector(".poster").src = song.poster;
-        div.querySelector(".name").textContent = isExtract ? extractMusicTitle(song.title) : song.title;
+        const titleMode = this.settingManager.getSetting('extractTitle');
+        let displayTitle = song.title;
+        
+        switch(titleMode) {
+          case 'on':
+            displayTitle = extractMusicTitle(song.title);
+            break;
+          case 'auto':
+            div.setAttribute('data-title-mode', 'auto');
+            break;
+          case 'off':
+          default:
+            break;
+        }
+      
+        div.querySelector(".name").textContent = displayTitle;
         div.querySelector(".artist").textContent = song.artist;
         return div;
     }

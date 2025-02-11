@@ -215,9 +215,28 @@ class MusicSearcher {
                             return;
                         }
 
+                        // 先切换到播放器界面
+                        document.querySelector("#function-list .player").click();
+
+                        // 预先设置基本信息
+                        const songInfo = {
+                            title: cleanTitle,
+                            artist: song.artist,
+                            poster: "https:" + song.pic,
+                            bvid: song.bvid,
+                            lyric: "等待获取歌词",
+                        };
+                        await this.playlistManager.updateUIForCurrentSong(songInfo);
+
+                        // 设置加载状态
+                        const playButton = document.querySelector(".control>.buttons>.play");
+                        const progressBar = document.querySelector(".progress-bar-inner");
+                        playButton.disabled = true;
+                        progressBar.classList.add('loading');
+
+                        // 获取音频URL等信息
                         const urls = await this.getAudioLink(song.bvid, true);
                         let url = urls[0];
-
                         try {
                             const res = await axios.get(url);
                             if (res.status === 403) {
@@ -227,30 +246,31 @@ class MusicSearcher {
                             url = urls[1];
                         }
 
+                        // 完成加载，创建完整的歌曲对象
                         const videoUrl = await this.getBilibiliVideoUrl(song.bvid, urls[2]);
                         const newSong = {
-                            title: cleanTitle,
-                            artist: song.artist,
+                            ...songInfo,
                             audio: url,
-                            poster: "https:" + song.pic,
-                            bvid: song.bvid,
                             cid: urls[2],
                             video: videoUrl,
-                            // 根据设置决定是否显示歌词搜索对话框
-                            lyric: await (this.settingManager.getSetting('lyricSearchType') === 'custom' 
+                            lyric: await (this.settingManager.getSetting('lyricSearchType') === 'custom'
                                 ? this.showLyricSearchDialog(cleanTitle)
                                 : this.getLyrics(keyword))
                         };
 
+                        // 恢复界面状态
+                        progressBar.classList.remove('loading');
+                        playButton.disabled = false;
+
+                        // 添加到播放列表并播放
                         this.playlistManager.addSong(newSong);
                         this.playlistManager.setPlayingNow(this.playlistManager.playlist.length - 1);
                         this.uiManager.renderPlaylist();
-                        document.querySelector("#function-list .player").click();
+
                     } catch (error) {
                         console.error("添加歌曲失败:", error);
                     }
                 });
-
                 list.appendChild(div);
             });
 
@@ -323,19 +343,19 @@ class MusicSearcher {
     async getBilibiliVideoUrl(bvid, cid) {
         try {
             const response = await fetch(`https://api.bilibili.com/x/player/playurl?bvid=${bvid}&cid=${cid}&qn=0&fnval=80&fnver=0&fourk=1`, {
- 
+
             });
-            
+
             if (!response.ok) {
                 throw new Error('获取视频URL失败');
             }
-            
+
             const data = await response.json();
-            
+
             if (data.code !== 0) {
                 throw new Error(data.message);
             }
-            
+
             // 返回第一个可用的视频URL
             return data.data.dash.video[0].baseUrl;
         } catch (error) {
@@ -350,17 +370,17 @@ class MusicSearcher {
             const keywordInput = document.getElementById('lyricKeyword');
             const skipBtn = document.getElementById('skipLyric');
             const confirmBtn = document.getElementById('confirmLyric');
-    
+
             // 显示当前歌曲信息
             titleDiv.textContent = songTitle;
             keywordInput.value = songTitle;
             dialog.classList.remove('hide');
-    
+
             const handleSkip = () => {
                 cleanup();
                 resolve("暂无歌词，尽情欣赏音乐");
             };
-    
+
             const handleConfirm = async () => {
                 const keyword = keywordInput.value.trim();
                 cleanup();
@@ -375,7 +395,7 @@ class MusicSearcher {
                     resolve("暂无歌词，尽情欣赏音乐");
                 }
             };
-    
+
             const handleKeydown = (e) => {
                 if (e.key === 'Enter') {
                     handleConfirm();
@@ -383,18 +403,18 @@ class MusicSearcher {
                     handleSkip();
                 }
             };
-    
+
             const cleanup = () => {
                 dialog.classList.add('hide');
                 skipBtn.removeEventListener('click', handleSkip);
                 confirmBtn.removeEventListener('click', handleConfirm);
                 keywordInput.removeEventListener('keydown', handleKeydown);
             };
-    
+
             skipBtn.addEventListener('click', handleSkip);
             confirmBtn.addEventListener('click', handleConfirm);
             keywordInput.addEventListener('keydown', handleKeydown);
-    
+
             // 聚焦输入框
             keywordInput.focus();
             keywordInput.select();

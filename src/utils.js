@@ -67,22 +67,26 @@ async function cropImageToSquare(imageUrl) {
 }
 
 function extractMusicTitle(input) {
-    // 匹配所有括号内的内容
-    const bracketsRegex = /<[^>]+>|《[^》]+》|\[[^\]]+\]|【[^】]+】|「[^」]+」/g;
-    // 匹配空格分隔的字符串(排除括号内的空格)
-    const spaceRegex = /(?![<《[【「])[^\s<>《》[\]【】「」]+\s+[^\s<>《》[\]【】「」]+(?![>》\]】」])/g;
+    if (!input || typeof input !== 'string') {
+        return '';
+    }
 
-    let results = [];
+    // 扩展正则表达式以包含更多类型的括号和引号
+    const bracketsRegex = /<[^>]+>|《[^》]+》|\[[^\]]+\]|【[^】]+】|「[^」]+」|『[^』]+』|（[^）]+）|\([^)]+\)/g;
+    let matches = input.match(bracketsRegex) || [];
+    
+    // 如果没有匹配到任何括号内容，返回原始输入（去除首尾空格）
+    if (matches.length === 0) {
+        return input.trim();
+    }
+    
+    matches = matches.map(match => {
+        // 去掉首尾的括号字符
+        return match.slice(1, -1);
+    });
 
-    const bracketMatches = input.match(bracketsRegex) || [];
-    results = results.concat(bracketMatches.map((match) => match.slice(1, -1)));
-
-    const spaceMatches = input.match(spaceRegex) || [];
-    results = results.concat(spaceMatches);
-
-    return results.filter((item) => item && item.trim()).join(" ");
+    return matches.filter(item => item && item.trim()).join(' ');
 }
-
 async function getImageDimensions(imageUrl) {
     return new Promise((resolve, reject) => {
         const img = new Image();
