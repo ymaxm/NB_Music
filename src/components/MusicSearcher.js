@@ -49,6 +49,7 @@ class MusicSearcher {
         }
 
         try {
+            // 获取 wbi keys 等辅助处理…
             const { img_key, sub_key } = await getWbiKeys();
             const params = {
                 search_type: "video",
@@ -56,23 +57,20 @@ class MusicSearcher {
                 order,
                 duration,
                 tids,
-                page
+                page  // 使用传入的页码
             };
             const query = encWbi(params, img_key, sub_key);
-
             const response = await axios.get(`https://api.bilibili.com/x/web-interface/wbi/search/type?${query}`);
-
             if (response.data.code !== 0) {
                 throw new Error(response.data.message || "搜索失败");
             }
-
             return response.data.data.result || [];
         } catch (error) {
             console.error("搜索B站视频失败:", error);
             throw error;
         }
     }
-    async searchMusic(keyword) {
+    async searchMusic(keyword, page = 1) {
         if (!keyword) return;
 
         try {
@@ -181,9 +179,15 @@ class MusicSearcher {
     </div>`;
 
             // 搜索处理
-            const searchResults = await this.searchBilibiliVideo(keyword);
+            const searchResults = await this.searchBilibiliVideo(keyword, page);
             list.innerHTML = "";
 
+            if (!searchResults.length) {
+                list.innerHTML = "未找到相关内容";
+                return;
+            }
+
+            // 渲染搜索结果
             searchResults.forEach((song) => {
                 const div = this.uiManager.createSongElement(
                     {
@@ -274,13 +278,37 @@ class MusicSearcher {
                 list.appendChild(div);
             });
 
-            // 清理搜索框
-            document.querySelector("#function-list span").style.display = "none";
-            document.querySelector(".search input").value = "";
-            document.querySelector(".search input").blur();
+            // 创建分页控制
+            const paginationContainer = document.createElement('div');
+            paginationContainer.className = 'pagination';
+
+            // 上一页按钮
+            if (page > 1) {
+                const prevBtn = document.createElement('button');
+                prevBtn.className = 'pagination-btn';
+                prevBtn.innerHTML = '<i class="bi bi-chevron-left"></i> 上一页';
+                prevBtn.onclick = () => this.searchMusic(keyword, page - 1);
+                paginationContainer.appendChild(prevBtn);
+            }
+
+            // 页码显示
+            const pageInfo = document.createElement('span');
+            pageInfo.className = 'page-info';
+            pageInfo.textContent = `第 ${page} 页`;
+            paginationContainer.appendChild(pageInfo);
+
+            // 下一页按钮
+            const nextBtn = document.createElement('button');
+            nextBtn.className = 'pagination-btn';
+            nextBtn.innerHTML = '下一页 <i class="bi bi-chevron-right"></i>';
+            nextBtn.onclick = () => this.searchMusic(keyword, page + 1);
+            paginationContainer.appendChild(nextBtn);
+
+            // 添加分页控制到搜索结果区域
+            list.appendChild(paginationContainer);
+
         } catch (error) {
             console.error("搜索失败:", error);
-            const list = document.querySelector(".search-result .list");
             list.innerHTML = "搜索失败，请重试";
         }
     }
@@ -419,6 +447,31 @@ class MusicSearcher {
             keywordInput.focus();
             keywordInput.select();
         });
+    }
+    async getSearchSuggestions(term) {
+        if (!term) return [];
+
+        try {
+            const params = {
+                term,
+                main_ver: "v1",
+                func: "suggest",
+                suggest_type: "accurate",
+                sub_type: "tag",
+                tag_num: 10,
+                rnd: Math.random()
+            };
+
+            const response = await axios.get("https://s.search.bilibili.com/main/suggest", { params });
+
+            if (response.data?.code === 0 && response.data?.result?.tag) {
+                return response.data.result.tag;
+            }
+            return [];
+        } catch (error) {
+            console.error("获取搜索建议失败:", error);
+            return [];
+        }
     }
 }
 

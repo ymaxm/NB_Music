@@ -7,6 +7,7 @@ class UIManager {
         this.playlistManager = playlistManager;
         this.favoriteManager = favoriteManager;
         this.musicSearcher = musicSearcher;
+        this.selectedSuggestionIndex = -1;
         this.isMaximized = false;
         this.settingManager = settingManager;
         this.minimizeBtn = document.getElementById("maximize");
@@ -15,8 +16,144 @@ class UIManager {
         this.initializePlayerControls();
         this.initializePageEvents();
         this.initializeSettings();
+        this.initializeAdvancedControls();
+        this.initializeSearchSuggestions();
     }
+    initializeSearchSuggestions() {
+        const searchInput = document.querySelector('.search input');
+        if (!searchInput) return;
+    
+        const suggestionContainer = document.createElement('div');
+        suggestionContainer.classList.add('suggestions'); 
+        document.querySelector(".loading").parentNode.appendChild(suggestionContainer);
+    
+        let selectedIndex = -1;
+        let suggestions = [];
+        let debounceTimer;
+    
+        searchInput.addEventListener('input', async (e) => {
+            clearTimeout(debounceTimer);
+            selectedIndex = -1;
+            const term = e.target.value.trim();
+            
+            if (!term) {
+                suggestionContainer.innerHTML = '';
+                suggestionContainer.classList.remove('active');
+                return;
+            }
+    
+            debounceTimer = setTimeout(async () => {
+                suggestions = await this.musicSearcher.getSearchSuggestions(term);
+                if (!suggestions.length) {
+                    suggestionContainer.innerHTML = '';
+                    suggestionContainer.classList.remove('active'); 
+                } else {
+                    suggestionContainer.innerHTML = suggestions
+                        .map(s => `
+                            <div class="suggestion-item" data-term="${s.value}">
+                                ${s.name}
+                            </div>
+                        `).join('');
+                    suggestionContainer.classList.add('active'); 
+                }
+            }, 20);
+        });
+    
+        // 键盘事件处理
+        searchInput.addEventListener('keydown', (e) => {
 
+            switch(e.key) {
+                case 'ArrowDown':
+                    e.preventDefault();
+                    selectedIndex = (selectedIndex + 1) % suggestions.length;
+                    updateSelection();
+                    break;
+                case 'ArrowUp': 
+                    e.preventDefault();
+                    selectedIndex = selectedIndex <= 0 ? suggestions.length - 1 : selectedIndex - 1;
+                    updateSelection();
+                    break;
+                case 'Enter':
+                    e.preventDefault();
+                    if (selectedIndex >= 0) {
+                        // 选中建议项
+                        searchInput.value = suggestions[selectedIndex].value;
+                        suggestionContainer.innerHTML = '';
+                        suggestions = [];
+                        // 触发搜索
+                        this.handleSearch();
+                    } else {
+                        // 直接搜索输入内容
+                        this.handleSearch();
+                    }
+                    break;
+                case 'Escape':
+                    suggestionContainer.innerHTML = '';
+                    suggestions = [];
+                    selectedIndex = -1;
+                    break;
+            }
+        });
+    
+        // 更新选中状态
+        const updateSelection = () => {
+            const items = suggestionContainer.querySelectorAll('.suggestion-item');
+            items.forEach((item, index) => {
+                if (index === selectedIndex) {
+                    item.classList.add('selected');
+                } else {
+                    item.classList.remove('selected');
+                }
+            });
+        };
+    
+        // 点击建议项
+        suggestionContainer.addEventListener('click', (e) => {
+            const item = e.target.closest('.suggestion-item');
+            if (item) {
+                searchInput.value = item.dataset.term;
+                suggestionContainer.innerHTML = '';
+                suggestions = [];
+                this.handleSearch();
+            }
+        });
+    
+        // 点击外部关闭建议框
+        document.addEventListener('click', (e) => {
+            if (!suggestionContainer.contains(e.target) && e.target !== searchInput) {
+                suggestionContainer.innerHTML = '';
+                suggestions = [];
+                selectedIndex = -1;
+                suggestionContainer.classList.remove('active'); 
+            }
+        });
+    }
+    initializeAdvancedControls() {
+        const speedSelect = document.querySelector(".speed-control");
+        [0.5, 1, 1.25, 1.5, 2].forEach(speed => {
+            const option = document.createElement("option");
+            option.value = speed;
+            option.text = `${speed}x`;
+            if (speed === 1) option.selected = true;
+            speedSelect.appendChild(option);
+        });
+        speedSelect.addEventListener("change", (e) => {
+            this.audioPlayer.audio.playbackRate = parseFloat(e.target.value);
+        });
+
+        const downloadBtn = document.querySelector(".import-btn");
+        downloadBtn.addEventListener("click", () => {
+            const currentSong = this.playlistManager.playlist[this.playlistManager.playingNow];
+            if (currentSong && currentSong.audio) {
+                const a = document.createElement("a");
+                a.href = currentSong.audio;
+                a.download = currentSong.title + ".mp3";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }
+        });
+    }
     initializeSettings() {
         // 主题切换事件
         this.settingManager.addListener('theme', (newValue, oldValue) => {
@@ -95,6 +232,10 @@ class UIManager {
             const percent = (e.clientX - rect.left) / rect.width;
             this.audioPlayer.audio.currentTime = percent * this.audioPlayer.audio.duration;
         });
+        this.audioPlayer.audio.addEventListener("timeupdate", () => {
+            const progress = (this.audioPlayer.audio.currentTime / this.audioPlayer.audio.duration) * 100;
+            document.querySelector(".progress-bar-inner").style.width = `${progress}%`;
+        });
 
         // 播放时更新进度条
         this.audioPlayer.audio.addEventListener("timeupdate", () => {
@@ -168,6 +309,11 @@ class UIManager {
     }
 
     initializeEvents() {
+        document.querySelector(".listname .controls .playmode").addEventListener("click", (e) => {
+            e.stopPropagation();
+            this.playlistManager.togglePlayMode();
+        });
+        
         window.addEventListener("keydown", (e) => {
             if (e.key == "F12") {
                 ipcRenderer.send("open-dev-tools");
@@ -251,13 +397,6 @@ class UIManager {
                     spanFocs.classList.remove("moving");
                 }, 300);
             });
-        });
-
-        // 搜索输入框事件
-        document.querySelector(".search input").addEventListener("keypress", (event) => {
-            if (event.key === "Enter") {
-                this.handleSearch(event);
-            }
         });
 
         document.querySelectorAll('nav').forEach(nav => {
@@ -368,7 +507,7 @@ class UIManager {
         div.classList.add("song");
         div.setAttribute("data-bvid", bvid);
 
-        const isLoved = window.app.favoriteManager.lovelist.some((item) => item.bvid === song.bvid);
+        const isLoved = this.favoriteManager.lovelist.some((item) => item.bvid === song.bvid);
 
         div.innerHTML = `
             <img class="poster" alt="Poster image">
@@ -393,22 +532,37 @@ class UIManager {
         div.querySelector(".poster").src = song.poster;
         const titleMode = this.settingManager.getSetting('extractTitle');
         let displayTitle = song.title;
-        
-        switch(titleMode) {
-          case 'on':
-            displayTitle = extractMusicTitle(song.title);
-            break;
-          case 'auto':
-            div.setAttribute('data-title-mode', 'auto');
-            break;
-          case 'off':
-          default:
-            break;
+
+        switch (titleMode) {
+            case 'on':
+                displayTitle = extractMusicTitle(song.title);
+                break;
+            case 'auto':
+                div.setAttribute('data-title-mode', 'auto');
+                break;
+            case 'off':
+            default:
+                break;
         }
-      
+
         div.querySelector(".name").textContent = displayTitle;
         div.querySelector(".artist").textContent = song.artist;
         return div;
+    }
+    showNotification(message, type = 'info') {
+        let container = document.querySelector('.notification-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.className = 'notification-container';
+            document.body.appendChild(container);
+        }
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.textContent = message;
+        container.appendChild(notification);
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
     }
 }
 

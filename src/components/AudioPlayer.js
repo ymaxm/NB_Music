@@ -7,13 +7,20 @@ class AudioPlayer {
         this.audio.loop = false;
         this.audio.volume = 1;
         this.volumeInterval = null;
+        this.audio.addEventListener("timeupdate", () => {
+            // 每30秒保存一次进度
+            if (Math.floor(this.audio.currentTime) % 30 === 0) {
+                this.playlistManager.savePlaylists();
+            }
+        });
 
-        this.audio.addEventListener("ended", () => {
-            if (this.audio.loop) {
-                this.audio.currentTime = 0;
-                this.audio.play();
-            } else {
-                this.next();
+        // 在暂停时保存进度
+        this.audio.addEventListener("pause", () => {
+            this.playlistManager.savePlaylists();
+        });
+        this.audio.addEventListener('ended', () => {
+            if (this.playlistManager) {
+                this.playlistManager.next();
             }
         });
 
@@ -97,29 +104,53 @@ class AudioPlayer {
     }
 
     prev() {
-        if (this.playlistManager.playingNow > 0) {
-            // 重置音量和清除间隔
-            if (this.volumeInterval) {
-                clearInterval(this.volumeInterval);
-                this.volumeInterval = null;
-            }
-            this.audio.volume = 1; // 立即重置音量
-
-            this.playlistManager.setPlayingNow(this.playlistManager.playingNow - 1);
+        // 重置音量和清除间隔
+        if (this.volumeInterval) {
+            clearInterval(this.volumeInterval);
+            this.volumeInterval = null;
         }
+        this.audio.volume = 1; // 立即重置音量
+    
+        let prevIndex;
+        if (this.playlistManager.playMode === 'shuffle') {
+            // 随机播放
+            prevIndex = Math.floor(Math.random() * this.playlistManager.playlist.length);
+            while(prevIndex === this.playlistManager.playingNow && this.playlistManager.playlist.length > 1) {
+                prevIndex = Math.floor(Math.random() * this.playlistManager.playlist.length);
+            }
+        } else {
+            // 列表循环和单曲循环模式下都使用相同的上一首逻辑
+            prevIndex = this.playlistManager.playingNow > 0 ? 
+                this.playlistManager.playingNow - 1 : 
+                this.playlistManager.playlist.length - 1;
+        }
+        
+        this.playlistManager.setPlayingNow(prevIndex);
     }
-
+    
     next() {
-        if (this.playlistManager.playingNow < this.playlistManager.playlist.length - 1) {
-            // 重置音量和清除间隔
-            if (this.volumeInterval) {
-                clearInterval(this.volumeInterval);
-                this.volumeInterval = null;
-            }
-            this.audio.volume = 1; // 立即重置音量
-
-            this.playlistManager.setPlayingNow(this.playlistManager.playingNow + 1);
+        // 重置音量和清除间隔
+        if (this.volumeInterval) {
+            clearInterval(this.volumeInterval);
+            this.volumeInterval = null;
         }
+        this.audio.volume = 1; // 立即重置音量
+    
+        let nextIndex;
+        if (this.playlistManager.playMode === 'shuffle') {
+            // 随机播放
+            nextIndex = Math.floor(Math.random() * this.playlistManager.playlist.length);
+            while(nextIndex === this.playlistManager.playingNow && this.playlistManager.playlist.length > 1) {
+                nextIndex = Math.floor(Math.random() * this.playlistManager.playlist.length);
+            }
+        } else {
+            // 列表循环和单曲循环模式下都使用相同的下一首逻辑
+            nextIndex = this.playlistManager.playingNow < this.playlistManager.playlist.length - 1 ? 
+                this.playlistManager.playingNow + 1 : 
+                0;
+        }
+        
+        this.playlistManager.setPlayingNow(nextIndex);
     }
 }
 

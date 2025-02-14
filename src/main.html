@@ -32,8 +32,27 @@
       </div>
     </div>
   </div>
-  <div class="mica">
-    <div id="importDialog" class="dialog hide">
+  <div class="dialog-bg hide" id="lyricSearchDialog">
+    <div class="dialog">
+      <h2>输入歌词搜索关键词</h2>
+      <div class="dialog-content">
+        <div class="input-group">
+          <label>当前导入歌曲:</label>
+          <div id="currentSongTitle"></div>
+        </div>
+        <div class="input-group">
+          <label for="lyricKeyword">搜索关键词:</label>
+          <input type="text" id="lyricKeyword" placeholder="输入关键词搜索歌词">
+        </div>
+      </div>
+      <div class="dialog-footer">
+        <button id="skipLyric">跳过</button>
+        <button id="confirmLyric">确认</button>
+      </div>
+    </div>
+  </div>
+  <div class="dialog-bg hide" id="importDialog">
+    <div class="dialog">
       <h2>从B站收藏夹导入</h2>
       <div class="dialog-content">
         <div class="input-group">
@@ -53,25 +72,8 @@
         <button id="confirmImport">导入</button>
       </div>
     </div>
-
-    <!-- 添加歌词搜索对话框 -->
-    <div id="lyricSearchDialog" class="dialog hide">
-      <h2>输入歌词搜索关键词</h2>
-      <div class="dialog-content">
-        <div class="input-group">
-          <label>当前导入歌曲:</label>
-          <div id="currentSongTitle"></div>
-        </div>
-        <div class="input-group">
-          <label for="lyricKeyword">搜索关键词:</label>
-          <input type="text" id="lyricKeyword" placeholder="输入关键词搜索歌词">
-        </div>
-      </div>
-      <div class="dialog-footer">
-        <button id="skipLyric">跳过</button>
-        <button id="confirmLyric">确认</button>
-      </div>
-    </div>
+  </div>
+  <div class="mica">
     <div class="a dock theme dk" data-descp="hide">
       <svg viewBox="0,0,307,307" class="light" xmlns="http://www.w3.org/2000/svg"
         xmlns:xlink="http://www.w3.org/1999/xlink" overflow="hidden">
@@ -125,6 +127,9 @@
         <div class="listname" style="padding: 2px 20px;">
           <div id="listname">默认歌单</div>
           <div class="controls">
+            <div class="playmode">
+              <i class="bi bi-repeat"></i>
+            </div>
             <div class="rename">
               <i class="bi bi-pencil-square"></i>
             </div>
@@ -150,6 +155,12 @@
             <div class="artist">歌手</div>
           </div>
           <div class="control">
+            <div class="advanced-controls">
+              <select class="speed-control">
+              </select>
+              <button class="import-btn"><i class="bi bi-download"></i></button>
+            </div>
+
             <div class="progress">
               <div class="progress-bar">
                 <div class="progress-bar-inner"></div>
@@ -297,6 +308,22 @@
                 <a class="active" data-key="extractTitle" data-value="off">完整显示</a>
                 <a data-key="extractTitle" data-value="auto">直接截断</a>
               </nav>
+            </div>
+          </div>
+          <div class="setting-item">
+            <div class="setting-info">
+              <i class="bi bi-cloud-download"></i>
+              <div class="words">
+                <div class="setting-name">缓存设置</div>
+                <div class="setting-descrition">是否开启缓存歌曲与视频</div>
+              </div>
+            </div>
+            <div class="setting-value">
+              <nav data-nav-id="nav4">
+                <a class="active" data-key="cacheEnabled" data-value="true">开启缓存</a>
+                <a data-key="cacheEnabled" data-value="false">关闭缓存</a>
+              </nav>
+              <button id="clearCache" class="cache-clear-btn">清除缓存</button>
             </div>
           </div>
         </div>

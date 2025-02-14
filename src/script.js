@@ -8,6 +8,7 @@ const FavoriteManager = require("./components/FavoriteManager.js");
 const MusicSearcher = require("./components/MusicSearcher.js");
 const SettingManager = require("./components/SettingManager.js");
 const MusiclistManager = require("./components/MusiclistManager.js");
+const CacheManager = require("./components/CacheManager.js");
 
 class App {
     constructor() {
@@ -42,6 +43,9 @@ class App {
             // 创建歌单管理器
             this.musiclistManager = new MusiclistManager(this.playlistManager);
 
+            // 创建缓存管理器
+            this.cacheManager = new CacheManager();
+
             // 更新组件间的引用
             this.audioPlayer.playlistManager = this.playlistManager;
             this.uiManager.playlistManager = this.playlistManager;
@@ -56,6 +60,9 @@ class App {
             this.playlistManager.musicSearcher = this.musicSearcher;
             this.playlistManager.musiclistManager = this.musiclistManager;
             this.musicSearcher.settingManager = this.settingManager;
+            this.playlistManager.cacheManager = this.cacheManager;
+            this.musiclistManager.uiManager = this.uiManager;
+            this.musiclistManager.musicSearcher = this.musicSearcher;
 
             // 暴露全局引用
             window.app = this;
@@ -100,7 +107,11 @@ class App {
 
             // 设置默认播放
             if (this.playlistManager.playlist.length > 0) {
-                this.playlistManager.setPlayingNow(0, false);
+                // 使用保存的播放索引
+                const index = this.playlistManager.playingNow || 0;
+                // 不重置进度
+                this.playlistManager.setPlayingNow(index, false);
+                this.uiManager.renderPlaylist();
             }
         } catch (error) {
             console.error("初始UI设置失败:", error);

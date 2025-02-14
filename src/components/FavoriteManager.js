@@ -101,13 +101,15 @@ class FavoriteManager {
                 const loveBtn = e.target.closest(".love");
                 if (loveBtn) {
                     e.stopPropagation();
-                    const songIndex = playlist.findIndex((item) => item.bvid === e.id);
+                    // 修改这里：使用 closest 获取父元素的 data-bvid
+                    const songBvid = e.target.closest('[data-bvid]').getAttribute('data-bvid');
+                    const songIndex = playlist.findIndex((item) => item.bvid === songBvid);
                     const song = this.playlistManager.playlist[songIndex];
 
                     if (loveBtn.querySelector("i").classList.contains("loved")) {
-                        this.removeFromFavorites(song, songIndex);
+                        this.removeFromFavorites(song);
                     } else {
-                        this.addToFavorites(song, songIndex);
+                        this.addToFavorites(song);
                     }
                 } else {
                     //如果在播放列表中找到了这首歌
