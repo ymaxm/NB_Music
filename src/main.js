@@ -3,7 +3,7 @@ const path = require("path");
 const puppeteer = require("puppeteer");
 const electronReload = require("electron-reload");
 const Storage = require("electron-store");
-
+const axios = require('axios');
 const storage = new Storage();
 
 function loadCookies() {
@@ -11,8 +11,8 @@ function loadCookies() {
     return storage.get("cookies");
 }
 
-function saveCookies(cookies) {
-    storage.set("cookies", cookies);
+function saveCookies(cookieString) {
+    storage.set("cookies", cookieString);
 }
 
 async function getBilibiliCookies() {
@@ -25,7 +25,7 @@ async function getBilibiliCookies() {
     await page.goto("https://www.bilibili.com");
     const cookies = await page.cookies();
     // console.log(typeof cookies);
-    saveCookies(cookies);
+    saveCookies(formatCookieString(cookies));
     await browser.close();
     // const formattedCookies = cookies.map((cookie) => `${cookie.name}=${cookie.value}`).join("; ");
     return cookies;
@@ -103,7 +103,35 @@ function createWindow() {
                 }
             }
         });
+        ipcMain.on('login-success', async (event, data) => {
+            try {
+                const { cookies } = data;
+                if (!cookies || cookies.length === 0) {
+                    throw new Error('未能获取到cookie');
+                }
 
+                // 直接保存cookie字符串
+                saveCookies(cookies.join(';'));
+
+                // 设置请求头
+                session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
+                    if (details.url.includes("bilibili.com") ||
+                        details.url.includes("bilivideo.cn") ||
+                        details.url.includes("bilivideo.com")) {
+                        details.requestHeaders["Cookie"] = cookies.join(';');
+                        details.requestHeaders["referer"] = "https://www.bilibili.com/";
+                        details.requestHeaders["user-agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3";
+                    }
+                    callback({ requestHeaders: details.requestHeaders });
+                });
+
+                win.webContents.send('cookies-set', true);
+
+            } catch (error) {
+                console.error('登录失败:', error);
+                win.webContents.send('cookies-set-error', error.message);
+            }
+        });
         // 主进程
         win.on("maximize", () => {
             win.webContents.send("window-state-changed", true);
@@ -136,12 +164,16 @@ function formatCookieString(cookies) {
 }
 
 app.whenReady().then(async () => {
+    if (!app.isPackaged) {
+        require('electron-reload')(__dirname, {
+            electron: path.join(process.cwd(), "node_modules", ".bin", "electron")
+        });
+    }
     createWindow();
     const cookie = await getBilibiliCookies();
-    const cookieString = formatCookieString(cookie);
     session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
         if (details.url.includes("bilibili.com") || details.url.includes("bilivideo.cn") || details.url.includes("bilivideo.com")) {
-            details.requestHeaders["Cookie"] = cookieString;
+            details.requestHeaders["Cookie"] = cookie;
             details.requestHeaders["referer"] = "https://www.bilibili.com/";
             details.requestHeaders["user-agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3";
         }

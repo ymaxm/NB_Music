@@ -3,7 +3,8 @@ class SettingManager {
         this.settings = {
             theme: 'dark',
             background: 'none',
-            lyricSearchType: 'auto' // 添加新的设置项
+            lyricSearchType: 'auto',
+            customCookies: ''
         };
         this.listeners = new Map();
         this.STORAGE_KEY = 'app_settings';
@@ -36,9 +37,9 @@ class SettingManager {
     setSetting(name, value) {
         const oldValue = this.settings[name];
         this.settings[name] = value;
-        
+
         this.notifyListeners(name, value, oldValue);
-        this.saveSettings();  
+        this.saveSettings();
     }
 
     addListener(settingName, callback) {

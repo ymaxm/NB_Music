@@ -9,6 +9,7 @@ const MusicSearcher = require("./components/MusicSearcher.js");
 const SettingManager = require("./components/SettingManager.js");
 const MusiclistManager = require("./components/MusiclistManager.js");
 const CacheManager = require("./components/CacheManager.js");
+const LoginManager = require("./components/LoginManager.js");
 
 class App {
     constructor() {
@@ -45,6 +46,9 @@ class App {
 
             // 创建缓存管理器
             this.cacheManager = new CacheManager();
+
+            // 创建登录管理器
+            this.loginManager = new LoginManager();
 
             // 更新组件间的引用
             this.audioPlayer.playlistManager = this.playlistManager;

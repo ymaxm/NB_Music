@@ -6,7 +6,9 @@
     "scripts": {
         "build": "electron-builder build",
         "publish": "electron-builder build --publish always",
-        "run": "electron ."
+        "run": "electron .",
+        "debug": "electron --inspect=5858 .",
+        "debug-brk": "electron --inspect-brk=5858 ."
     },
     "keywords": [],
     "author": {
@@ -28,7 +30,8 @@
         "electron-reload": "^2.0.0-alpha.1",
         "electron-store": "8.2.0",
         "md5": "^2.3.0",
-        "puppeteer": "^24.0.0"
+        "puppeteer": "^24.0.0",
+        "qrcode": "^1.5.4"
     },
     "build": {
         "artifactName": "${name}-v${version}-${os}-${arch}.${ext}",
