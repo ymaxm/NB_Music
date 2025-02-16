@@ -78,6 +78,9 @@ function createWindow() {
             }
         });
         win.loadFile("src/main.html");
+        if (!app.isPackaged) {
+            win.webContents.openDevTools();
+        }
         ipcMain.on("window-minimize", () => {
             win.minimize();
         });

@@ -24,6 +24,13 @@
         "globals": "^15.14.0"
     },
     "dependencies": {
+        "@pixi/app": "^7.4.2",
+        "@pixi/core": "^7.4.2",
+        "@pixi/display": "^7.4.2",
+        "@pixi/filter-blur": "^7.4.2",
+        "@pixi/filter-bulge-pinch": "^5.1.1",
+        "@pixi/filter-color-matrix": "^7.4.2",
+        "@pixi/sprite": "^7.4.2",
         "NeteaseCloudMusicApi": "^4.25.0",
         "axios": "^1.7.9",
         "bootstrap-icons": "^1.11.3",
