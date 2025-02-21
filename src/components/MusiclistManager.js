@@ -26,19 +26,24 @@ class MusiclistManager {
         this.init();
     }
     loadLastPlayedPlaylist() {
-        // 1. 加载所有歌单数据
+        // 1. 加载所有歌单数据 
         const savedPlaylists = localStorage.getItem("nbmusic_playlists");
         if (savedPlaylists) {
             this.playlists = JSON.parse(savedPlaylists);
-
-            // 如果没有歌单，创建默认歌单
-            if (this.playlists.length === 0) {
-                this.playlists.push({
-                    id: this.generateUUID(),
-                    name: "默认歌单",
-                    songs: []
-                });
-            }
+        }
+    
+        // 如果没有歌单，创建默认空歌单
+        if (!this.playlists || this.playlists.length === 0) {
+            this.playlists = [{
+                id: this.generateUUID(),
+                name: "默认歌单",
+                songs: []
+            }];
+            this.savePlaylists();
+            
+            // 设置初始UI状态
+            this.uiManager.showDefaultUi();
+            return;
         }
 
         // 2. 加载上次播放状态
@@ -385,26 +390,27 @@ class MusiclistManager {
     deletePlaylist(playlistId) {
         const index = this.playlists.findIndex(p => p.id === playlistId);
         if (index === -1) return;
-
+    
         const deleteBtn = document.querySelector(`li[data-id="${playlistId}"] .bi-trash`);
-
+    
         // 如果已经是确认状态
         if (deleteBtn.classList.contains('confirm-delete')) {
             // 如果删除的是当前播放的歌单
             if (index === this.activePlaylistIndex) {
-                // 优先选择前一个歌单，如果不存在则选择后一个歌单
+                // 获取前一个歌单或后一个歌单的索引
                 let newIndex;
                 if (index > 0) {
                     newIndex = index - 1;
                 } else if (this.playlists.length > 1) {
-                    newIndex = 1; // 选择下一个歌单
+                    newIndex = 1;
                 }
-
+    
                 // 删除歌单
                 this.playlists.splice(index, 1);
-
-                if (typeof newIndex === 'undefined') {
-                    // 如果没有其他歌单，创建默认歌单
+    
+                // 如果没有其他歌单了
+                if (this.playlists.length === 0) {
+                    // 创建默认歌单
                     const defaultPlaylist = {
                         id: this.generateUUID(),
                         name: "默认歌单",
@@ -415,18 +421,23 @@ class MusiclistManager {
                     this.playlistManager.playlistName = defaultPlaylist.name;
                     this.playlistManager.playlist = [];
                     this.playlistManager.currentPlaylistId = defaultPlaylist.id;
+                    
+                    // 重置UI
+                    this.playlistManager.uiManager.showDefaultUi();
                 } else {
-                    // 切换到新选择的歌单
+                    // 切换到新的歌单
                     this.activePlaylistIndex = newIndex;
                     const newPlaylist = this.playlists[newIndex];
                     this.playlistManager.playlistName = newPlaylist.name;
                     this.playlistManager.playlist = [...newPlaylist.songs];
                     this.playlistManager.currentPlaylistId = newPlaylist.id;
+                    
+                    // 自动点击新的歌单
+                    const newPlaylistElement = document.querySelector(`li[data-id="${newPlaylist.id}"]`);
+                    if (newPlaylistElement) {
+                        newPlaylistElement.click();
+                    }
                 }
-
-                // 更新播放状态和UI
-                this.playlistManager.setPlayingNow(0);
-                this.playlistManager.savePlaylists();
             } else {
                 // 如果删除的不是当前播放的歌单
                 this.playlists.splice(index, 1);
@@ -434,27 +445,28 @@ class MusiclistManager {
                     this.activePlaylistIndex--;
                 }
             }
-
+    
             this.savePlaylists();
             this.renderPlaylistList();
             this.renderSongList();
             return;
         }
-
-        // 第一次点击，显示确认状态
+    
+        // 第一次点击,显示确认状态
         deleteBtn.classList.add('confirm-delete');
         deleteBtn.style.color = 'red';
-
-        // 创建确认文本
+    
         const confirmText = document.createElement('span');
         confirmText.textContent = '再次点击确认删除';
         confirmText.style.cssText = `
             color: red;
+            position: relative;
+            top: 0.25em;
             font-size: 12px;
             margin-left: 5px;
         `;
         deleteBtn.parentNode.appendChild(confirmText);
-
+    
         // 3秒后恢复原状
         setTimeout(() => {
             deleteBtn.classList.remove('confirm-delete');

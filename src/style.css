@@ -85,6 +85,7 @@ body {
     height: 100vh;
     overflow: hidden;
     position: fixed;
+    background-size: cover;
 }
 
 /* Title bar styling */
@@ -660,9 +661,9 @@ i:hover {
 
 [data-title-mode="auto"] .info .name,
 [data-title-mode="auto"] .info .artist {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 
@@ -683,7 +684,7 @@ i:hover {
     gap: 4px;
     text-align: left;
     flex: 1;
-    min-width: 0; 
+    min-width: 0;
     padding-right: 8px;
 }
 
@@ -732,20 +733,25 @@ i:hover {
 ::-webkit-scrollbar:hover {
     background-color: #ffffff10;
 }
+
 ::-webkit-scrollbar:hover {
     background-color: var(--card);
 }
+
 ::-webkit-scrollbar {
     border-radius: 7px;
     height: 14px;
     width: 14px;
 }
+
 ::-webkit-scrollbar-corner {
     display: none;
 }
+
 ::-webkit-scrollbar-thumb:hover {
     border: 4px solid transparent;
 }
+
 ::-webkit-scrollbar-thumb {
     background: #7f7f7f70;
     background-clip: padding-box;
@@ -805,6 +811,13 @@ i:hover {
     font-size: 24px;
     font-weight: 600;
     margin-bottom: 24px;
+}
+
+#lovelist {
+    overflow-y: auto;
+}
+#lovelist>.song {
+    border: 1px solid var(--border-1);
 }
 
 /* Function list focus indicator */
@@ -883,12 +896,10 @@ i.loved {
 
 @keyframes fadeIn {
     from {
-        height: 0;
         transform: translateY(10px);
     }
 
     to {
-        height: 100%;
         transform: translateY(0);
     }
 }
@@ -969,43 +980,60 @@ i.loved {
     animation: flashRow 0.8s ease-out;
 }
 
-/* 歌词动画 */
-.lyric-line {
-    font-size: 20px;
-    line-height: 2;
-    margin: 10px 0;
-    min-height: 36px;
-    transition: all 0.3s ease;
-    transform-origin: center center;
-    backface-visibility: hidden;
-    filter: blur(1px);
-}
-
-.lyric-line.active {
-    font-size: 25px;
-    margin: 40px 0;
-    filter: blur(0);
-}
-
+/* 歌词容器基础样式 */
 .lyrics-scroll-wrapper {
     width: 100%;
     will-change: transform;
     transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
 }
 
+/* 歌词行样式 */
+.lyric-line {
+    font-size: 18px;
+    line-height: 1.8;
+    margin: 8px 0;
+    min-height: 32px;
+    opacity: 0.6;
+    transform: scale(0.95);
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    filter: blur(1px);
+    will-change: transform, opacity, filter;
+}
+
+/* 激活的歌词行 */
+.lyric-line.active {
+    font-size: 24px;
+    margin: 32px 0;
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0) !important;
+    background: linear-gradient(90deg, var(--theme-1), var(--theme-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* 单个字符动画 */
 .char {
-    transition: all 0.2s ease;
-    display: inline-block;
     white-space: pre;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0.6;
+    transform-origin: center;
 }
 
 .char.active {
     color: var(--text);
     transform: scale(1.1);
+    opacity: 1;
+    text-shadow: 0 0 8px var(--rgba-13);
 }
 
 .char.completed {
     color: var(--rgba-6);
+    transform: scale(1);
+    opacity: 0.4;
 }
 
 /* 控件动画 */
@@ -1091,13 +1119,27 @@ i.loved {
     transform: scale(0.95);
 }
 
-/* 列表焦点动画 */
+/* 列表焦点动画 @tjy-github在win12的祖传代码*/
 .list.focs span.focs {
-    transition: top 0.3s cubic-bezier(1, -0.05, 0, 0.99);
+    transition: 500ms cubic-bezier(1, 0, 0, 1);
 }
 
-.list.focs span.focs.cl {
-    transition: none;
+.list.focs span.focs.moving {
+    animation: fcl 200ms cubic-bezier(1, 0.8, 0, 0.2) 160ms;
+}
+
+@keyframes fcl {
+    0% {
+        transform: none;
+    }
+
+    50% {
+        transform: scaleY(0.5);
+    }
+
+    100% {
+        transform: none;
+    }
 }
 
 /* 播放项切换动画 */
@@ -1174,19 +1216,6 @@ i.loved {
     filter: saturate(130%) brightness(1.1);
 }
 
-#function-list .focs {
-    position: absolute;
-    width: 3px;
-    height: 20px;
-    background: linear-gradient(0deg, var(--theme-1), var(--theme-2));
-    border-radius: 3px;
-    pointer-events: none;
-}
-
-#function-list .focs.moving {
-    transition: top 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-        left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
 
 #function-list a {
     position: relative;
@@ -1215,6 +1244,7 @@ i.loved {
     border-radius: 8px;
     backdrop-filter: blur(20px);
     transition: background-color 0.3s ease;
+    border: 1px solid var(--border-1);
 }
 
 .setting-item:hover {
@@ -1580,7 +1610,7 @@ li.active {
     /* 确保对话框在遮罩层之上 */
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1px solid var(--border-1);   
+    border: 1px solid var(--border-1);
     background: var(--mica);
 }
 
@@ -1829,11 +1859,11 @@ select:disabled {
     background: var(--bg);
 }
 
-.speed-control{
+.speed-control {
     width: auto;
 }
 
-.setting-value{
+.setting-value {
     display: flex;
 }
 
@@ -1843,6 +1873,7 @@ select:disabled {
     bottom: 0;
     z-index: 9999;
 }
+
 .notification {
     margin-bottom: 8px;
     padding: 10px 16px;
@@ -1852,12 +1883,15 @@ select:disabled {
     opacity: 0.9;
     transition: opacity 0.3s ease;
 }
+
 .notification.info {
     background-color: var(--theme-1);
 }
+
 .notification.success {
     background-color: #4caf50;
 }
+
 .notification.error {
     background-color: #f44336;
 }
@@ -1894,7 +1928,8 @@ select:disabled {
     transition: all 0.2s ease;
 }
 
-.suggestion-item:hover,.selected {
+.suggestion-item:hover,
+.selected {
     background: var(--rgba-16);
 }
 
@@ -1954,12 +1989,12 @@ select:disabled {
     transform: scale(0.95);
 }
 
-.listname input{
+.listname input {
     position: relative;
     right: 10px;
 }
 
-.dialog-bg{
+.dialog-bg {
     position: absolute;
     top: 0;
     left: 0;

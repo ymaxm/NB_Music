@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-cn" class="dark">
+<html lang="zh-cn" class="dark" style="--bgul: url(../img/NB_Music.png);">
 
 <head>
   <meta charset="UTF-8" />
@@ -32,7 +32,7 @@
   <div class="loading" style="display: none;">
     <div class="mica" style="align-items: center;">
       <div class="cover">
-        <img class="cover-img" src="./img/NB_Music.png" alt="cover" />
+        <img class="cover-img" src="../img/NB_Music.png" alt="cover" />
       </div>
     </div>
   </div>
@@ -84,7 +84,6 @@
         <div class="qrcode-container">
           <canvas id="qrcode"></canvas>
           <div class="qrcode-status">请使用哔哩哔哩客户端扫码登录</div>
-          
         </div>
       </div>
       <div class="dialog-footer">
@@ -168,7 +167,7 @@
       <div class="player">
         <div class="player-content">
           <div class="cover">
-            <img class="cover-img" src="./img/NB_Music.png" alt="cover" />
+            <img class="cover-img" src="../img/NB_Music.png" alt="cover" />
           </div>
           <div class="info">
             <div class="title">歌曲名</div>
@@ -183,14 +182,14 @@
 
             <div class="progress">
               <div class="progress-bar">
-                <div class="progress-bar-inner"></div>
+                <div class="progress-bar-inner" style="width: 0px;"></div>
               </div>
             </div>
             <div class="buttons">
               <div class="nr prev" data-action="prev">
                 <i class="bi bi-arrow-left"></i>
               </div>
-              <div class="play played" data-action="play">
+              <div class="play paused" data-action="play">
                 <div class="pause">
                   <div class="left"></div>
                   <div class="right"></div>
@@ -245,7 +244,7 @@
         <div class="title">搜索结果</div>
         <list class="search list">
           <div class="song">
-            <img class="poster" alt="Poster image" src="./img/NB_Music.png" />
+            <img class="poster" alt="Poster image" src="../img/NB_Music.png" />
             <div class="info">
               <div class="name">NB</div>
               <div class="artist">NB</div>
@@ -346,7 +345,21 @@
               <button id="clearCache" class="cache-clear-btn">清除缓存</button>
             </div>
           </div>
-
+          <div class="setting-item">
+            <div class="setting-info">
+              <i class="bi bi-chat-square-text"></i>
+              <div class="words">
+                <div class="setting-name">歌词显示</div>
+                <div class="setting-descrition">是否显示歌词</div>
+              </div>
+            </div>
+            <div class="setting-value">
+              <nav data-nav-id="nav-lyrics">
+                <a class="active" data-key="lyricsEnabled" data-value="true">显示歌词</a>
+                <a data-key="lyricsEnabled" data-value="false">隐藏歌词</a>
+              </nav>
+            </div>
+          </div>
         </div>
       </div>
     </div>

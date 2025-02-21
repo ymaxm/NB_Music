@@ -30,7 +30,7 @@ class App {
             this.audioPlayer = new AudioPlayer(this.playlistManager);
 
             // 创建歌词播放器
-            this.lyricsPlayer = new LyricsPlayer("暂无歌词，尽情欣赏音乐", this.audioPlayer.audio);
+            this.lyricsPlayer = new LyricsPlayer("暂无歌词，尽情欣赏音乐", this.audioPlayer.audio, this.settingManager);
 
             // 创建UI管理器
             this.uiManager = new UIManager(this.settingManager, this.audioPlayer, this.playlistManager, this.favoriteManager, this.musicSearcher);
@@ -56,6 +56,7 @@ class App {
             this.uiManager.audioPlayer = this.audioPlayer;
             this.uiManager.favoriteManager = this.favoriteManager;
             this.uiManager.musicSearcher = this.musicSearcher;
+            this.uiManager.lyricsPlayer = this.lyricsPlayer;
             this.musicSearcher.uiManager = this.uiManager;
             this.musicSearcher.playlistManager = this.playlistManager;
             this.musicSearcher.favoriteManager = this.favoriteManager;

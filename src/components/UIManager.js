@@ -22,31 +22,31 @@ class UIManager {
     initializeSearchSuggestions() {
         const searchInput = document.querySelector('.search input');
         if (!searchInput) return;
-    
+
         const suggestionContainer = document.createElement('div');
-        suggestionContainer.classList.add('suggestions'); 
+        suggestionContainer.classList.add('suggestions');
         document.querySelector(".loading").parentNode.appendChild(suggestionContainer);
-    
+
         let selectedIndex = -1;
         let suggestions = [];
         let debounceTimer;
-    
+
         searchInput.addEventListener('input', async (e) => {
             clearTimeout(debounceTimer);
             selectedIndex = -1;
             const term = e.target.value.trim();
-            
+
             if (!term) {
                 suggestionContainer.innerHTML = '';
                 suggestionContainer.classList.remove('active');
                 return;
             }
-    
+
             debounceTimer = setTimeout(async () => {
                 suggestions = await this.musicSearcher.getSearchSuggestions(term);
                 if (!suggestions.length) {
                     suggestionContainer.innerHTML = '';
-                    suggestionContainer.classList.remove('active'); 
+                    suggestionContainer.classList.remove('active');
                 } else {
                     suggestionContainer.innerHTML = suggestions
                         .map(s => `
@@ -54,21 +54,21 @@ class UIManager {
                                 ${s.name}
                             </div>
                         `).join('');
-                    suggestionContainer.classList.add('active'); 
+                    suggestionContainer.classList.add('active');
                 }
             }, 20);
         });
-    
+
         // 键盘事件处理
         searchInput.addEventListener('keydown', (e) => {
 
-            switch(e.key) {
+            switch (e.key) {
                 case 'ArrowDown':
                     e.preventDefault();
                     selectedIndex = (selectedIndex + 1) % suggestions.length;
                     updateSelection();
                     break;
-                case 'ArrowUp': 
+                case 'ArrowUp':
                     e.preventDefault();
                     selectedIndex = selectedIndex <= 0 ? suggestions.length - 1 : selectedIndex - 1;
                     updateSelection();
@@ -94,7 +94,7 @@ class UIManager {
                     break;
             }
         });
-    
+
         // 更新选中状态
         const updateSelection = () => {
             const items = suggestionContainer.querySelectorAll('.suggestion-item');
@@ -106,7 +106,7 @@ class UIManager {
                 }
             });
         };
-    
+
         // 点击建议项
         suggestionContainer.addEventListener('click', (e) => {
             const item = e.target.closest('.suggestion-item');
@@ -117,14 +117,14 @@ class UIManager {
                 this.handleSearch();
             }
         });
-    
+
         // 点击外部关闭建议框
         document.addEventListener('click', (e) => {
             if (!suggestionContainer.contains(e.target) && e.target !== searchInput) {
                 suggestionContainer.innerHTML = '';
                 suggestions = [];
                 selectedIndex = -1;
-                suggestionContainer.classList.remove('active'); 
+                suggestionContainer.classList.remove('active');
             }
         });
     }
@@ -142,19 +142,63 @@ class UIManager {
         });
 
         const downloadBtn = document.querySelector(".import-btn");
-        downloadBtn.addEventListener("click", () => {
-            const currentSong = this.playlistManager.playlist[this.playlistManager.playingNow];
-            if (currentSong && currentSong.audio) {
-                const a = document.createElement("a");
-                a.href = currentSong.audio;
-                a.download = currentSong.title + ".mp3";
+        downloadBtn?.addEventListener("click", async () => {
+            try {
+                const currentSong = this.playlistManager.playlist[this.playlistManager.playingNow];
+                if (!currentSong) {
+                    this.showNotification('没有可下载的音乐', 'error');
+                    return;
+                }
+        
+                // 显示加载提示
+                this.showNotification('正在准备下载...', 'info');
+        
+                // 获取最新的音频URL
+                const audioUrl = currentSong.audio;
+                if (!audioUrl) {
+                    throw new Error('无法获取音频链接');
+                }
+        
+                // 使用 fetch 下载音频文件
+                const response = await fetch(audioUrl);
+                if (!response.ok) {
+                    throw new Error('下载失败');
+                }
+        
+                // 获取音频数据
+                const blob = await response.blob();
+                
+                // 创建下载链接
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                // 清理文件名，移除非法字符
+                const fileName = currentSong.title.replace(/[<>:"/\\|?*]+/g, '_');
+                a.download = `${fileName}.mp3`; // 使用 .mp3 扩展名
+                a.href = url;
+                
+                // 触发下载
                 document.body.appendChild(a);
                 a.click();
+                
+                // 清理
+                window.URL.revokeObjectURL(url);
                 document.body.removeChild(a);
+        
+                this.showNotification('开始下载音乐', 'success');
+        
+            } catch (error) {
+                console.error("下载失败:", error);
+                this.showNotification('下载失败: ' + error.message, 'error');
             }
         });
     }
     initializeSettings() {
+        // 监听歌词显示设置变更
+        this.settingManager.addListener('lyricsEnabled', (newValue) => {
+            if (this.lyricsPlayer) {
+                this.lyricsPlayer.setVisibility(newValue === 'true');
+            }
+        });
         // 主题切换事件
         this.settingManager.addListener('theme', (newValue, oldValue) => {
             if (newValue == 'auto') {
@@ -313,10 +357,17 @@ class UIManager {
             e.stopPropagation();
             this.playlistManager.togglePlayMode();
         });
-        
+
         window.addEventListener("keydown", (e) => {
-            if (e.key == "F12") {
+            // F12 打开开发者工具
+            if (e.key === "F12") {
                 ipcRenderer.send("open-dev-tools");
+            }
+
+            // 空格键控制播放/暂停
+            if (e.key === " " && e.target.tagName !== "INPUT") { // 避免在输入框中按空格触发
+                e.preventDefault(); // 阻止页面滚动
+                this.audioPlayer.play();
             }
         });
         // 窗口控制按钮
@@ -387,15 +438,15 @@ class UIManager {
 
                 // 设置位置 - 不再使用 transform，直接设置 top
                 if (spanFocs.dataset.type === "abs") {
-                    spanFocs.style.top = clickedItem.offsetTop + 10 + "px";
+                    spanFocs.style.top = clickedItem.offsetTop + 9 + "px";
                 } else {
-                    spanFocs.style.top = clickedItem.offsetTop + 10 + "px";
-                    spanFocs.style.left = clickedItem.offsetLeft + 10 + "px";
+                    spanFocs.style.top = clickedItem.offsetTop + 9 + "px";
+                    spanFocs.style.left = clickedItem.offsetLeft + 5 + "px";
                 }
 
                 setTimeout(() => {
                     spanFocs.classList.remove("moving");
-                }, 300);
+                }, 500);
             });
         });
 
@@ -456,9 +507,13 @@ class UIManager {
     }
 
     async handleSearch() {
-        const keyword = document.querySelector(".search input").value;
-        if (!keyword) return;
-        this.musicSearcher.searchMusic(keyword);
+        try {
+            const keyword = document.querySelector(".search input").value;
+            if (!keyword) return;
+            this.musicSearcher.searchMusic(keyword);
+        } catch (error) {
+            this.showNotification('搜索失败: ' + error.message, 'error');
+        }
     }
 
     renderPlaylist() {
@@ -563,6 +618,18 @@ class UIManager {
         setTimeout(() => {
             notification.remove();
         }, 3000);
+    }
+    showDefaultUi() {
+        // 设置默认UI显示
+        document.querySelector(".player-content .cover .cover-img").src = "../img/NB_Music.png";
+        document.querySelector("html").style.setProperty("--bgul", "url(../img/NB_Music.png)");
+        document.querySelector("video")?.remove();
+        document.querySelector(".player .info .title").textContent = "NB Music";
+        document.querySelector(".player .info .artist").textContent = "欢迎使用";
+        document.querySelector(".control>.buttons>.play").classList = "play paused";
+        document.querySelector(".progress-bar-inner").style.width = "0%";
+        this.audioPlayer.audio.src = "";
+        this.lyricsPlayer.changeLyrics("");
     }
 }
 

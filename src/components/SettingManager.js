@@ -4,7 +4,7 @@ class SettingManager {
             theme: 'dark',
             background: 'none',
             lyricSearchType: 'auto',
-            customCookies: ''
+            lyricsEnabled: true
         };
         this.listeners = new Map();
         this.STORAGE_KEY = 'app_settings';

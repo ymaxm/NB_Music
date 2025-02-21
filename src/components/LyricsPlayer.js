@@ -1,59 +1,63 @@
-const { LyricPlayer } = require("@applemusic-like-lyrics/core");
-
+//歌词渲染类
 class LyricsPlayer {
-    constructor(lyricsString, audioElement) {
-        this.lyricPlayer = new LyricPlayer();
+    constructor(lyricsString, audioElement, settingManager) {
         this.lyricsContainer = document.getElementById("lyrics-container");
         this.lyricsContainer.innerHTML = "";
-        this.lyricsContainer.appendChild(this.lyricPlayer.getElement());
-        
-        this.audio = audioElement;
         this.parsedData = this.parseLyrics(lyricsString);
-        this.lastUpdateTime = 0;
+        this.audio = audioElement;
+        this.activeLines = new Set();
+        this.completedLines = new Set();
+        this.animationFrame = null;
+        this.lastScrollTime = Date.now();
+        this.settingManager = settingManager;
 
-        // 初始化歌词数据
-        this.setupLyricLines();
+        // 创建滚动容器
+        this.scrollWrapper = document.createElement("div");
+        this.scrollWrapper.className = "lyrics-scroll-wrapper";
+        this.lyricsContainer.appendChild(this.scrollWrapper);
 
-        this.audio.addEventListener("timeupdate", () => this.update());
+        // 初始化transform相关变量
+        this.currentTransformY = 0;
+        this.targetTransformY = 0;
+        this.animating = false;
+
+        // 绑定audio事件
+        this.audio.addEventListener("play", () => this.start());
+        this.audio.addEventListener("pause", () => this.stop());
         this.audio.addEventListener("seeking", () => this.onSeek());
+
+        this.setVisibility(this.settingManager.getSetting('lyricsEnabled')=="true");
+        this.init();
+    }
+    init() {
+        this.lyricsContainer.style.position = "relative";
+        this.lyricsContainer.style.overflow = "hidden";
+        this.scrollWrapper.style.transform = "translateY(0)";
+        this.currentTransformY = 0;
+        this.targetTransformY = 0;
+
+        this.parsedData.forEach((data) => {
+            const element = data.type === "metadata" ? this.createMetadataElement(data) : this.createLyricElement(data);
+            this.scrollWrapper.appendChild(element);
+        });
     }
 
-    convertToAMLLFormat(parsedData) {
-        return parsedData
-            .filter(item => item.type === "lyric")
-            .map(line => ({
-                words: line.chars.map(word => ({
-                    word: word.text,
-                    time: word.startTime / 1000,
-                    duration: word.duration / 1000
-                })),
-                translatedLyric: "",
-                romanLyric: ""
-            }));
+    setVisibility(visible) {
+        if (this.lyricsContainer) {
+            this.lyricsContainer.style.opacity = visible ? '1' : '0';
+            this.lyricsContainer.style.width = visible ? '' : '0';
+        }
     }
-
-    setupLyricLines() {
-        const amllLines = this.convertToAMLLFormat(this.parsedData);
-        this.lyricPlayer.setLyricLines(amllLines);
-    }
-
-    update() {
-        const currentTime = this.audio.currentTime * 1000;
-        const deltaTime = performance.now() - this.lastUpdateTime;
-        
-        this.lyricPlayer.setCurrentTime(currentTime);
-        this.lyricPlayer.update(deltaTime);
-        
-        this.lastUpdateTime = performance.now();
-    }
-
-    onSeek() {
-        this.lyricPlayer.setCurrentTime(this.audio.currentTime * 1000);
-    }
-
     changeLyrics(newLyricsString) {
+        this.stop();
+        this.activeLines.clear();
+        this.completedLines.clear();
+        this.scrollWrapper.innerHTML = "";
         this.parsedData = this.parseLyrics(newLyricsString);
-        this.setupLyricLines();
+        this.init();
+        if (!this.audio.paused) {
+            this.start();
+        }
     }
 
     parseLyrics(lyricsString) {
@@ -132,6 +136,150 @@ class LyricsPlayer {
             });
         }
         return parsedData;
+    }
+
+    createLyricElement(lyricData) {
+        const lineDiv = document.createElement("div");
+        lineDiv.className = "lyric-line";
+
+        if (lyricData.chars.length === 1 && lyricData.chars[0].text === lyricData.chars[0].text.trim()) {
+            const charSpan = document.createElement("span");
+            charSpan.className = "char";
+            charSpan.textContent = lyricData.chars[0].text;
+            lineDiv.appendChild(charSpan);
+        } else {
+            lyricData.chars.forEach((char) => {
+                const charSpan = document.createElement("span");
+                charSpan.className = "char";
+                charSpan.textContent = char.text;
+                lineDiv.appendChild(charSpan);
+            });
+        }
+        return lineDiv;
+    }
+
+    createMetadataElement(metadata) {
+        const div = document.createElement("div");
+        div.className = "metadata";
+        metadata.content.forEach((item) => {
+            const span = document.createElement("span");
+            span.textContent = item.tx;
+            div.appendChild(span);
+        });
+        return div;
+    }
+
+
+    start() {
+        this.animate();
+    }
+
+    stop() {
+        if (this.animationFrame) {
+            cancelAnimationFrame(this.animationFrame);
+            this.animationFrame = null;
+        }
+    }
+
+    onSeek() {
+        this.activeLines.clear();
+        this.completedLines.clear();
+        Array.from(this.scrollWrapper.querySelectorAll(".char")).forEach((char) => {
+            char.classList.remove("active", "completed");
+        });
+    }
+
+    animate() {
+        if (!this.scrollWrapper) return;
+        const currentTime = this.audio.currentTime * 1000;
+        let lastActiveLine = null;
+        let lastActiveIndex = -1;
+
+        this.parsedData.forEach((data, dataIndex) => {
+            if (data.type === "lyric") {
+                const line = this.scrollWrapper.children[dataIndex];
+                if (!line) return;
+
+                const chars = Array.from(line.children);
+                let hasActiveLine = false;
+                let allCompleted = true;
+
+                data.chars.forEach((char, index) => {
+                    const charElement = chars[index];
+                    const charStartTime = char.startTime;
+                    const charEndTime = char.startTime + char.duration;
+
+                    if (currentTime >= charStartTime && currentTime <= charEndTime) {
+                        charElement.classList.add("active");
+                        charElement.classList.remove("completed");
+                        hasActiveLine = true;
+                        allCompleted = false;
+                    } else if (currentTime > charEndTime) {
+                        charElement.classList.remove("active");
+                        charElement.classList.add("completed");
+                    } else {
+                        charElement.classList.remove("active", "completed");
+                        allCompleted = false;
+                    }
+                });
+
+                if (hasActiveLine) {
+                    lastActiveLine = line;
+                    lastActiveIndex = dataIndex;
+                }
+
+                // 先移除所有行的active状态
+                line.classList.remove("active");
+                this.activeLines.delete(dataIndex);
+
+                if (allCompleted) {
+                    this.completedLines.add(dataIndex);
+                }
+            }
+        });
+
+        // 只激活最后一个活跃行
+        if (lastActiveLine) {
+            lastActiveLine.classList.add("active");
+            this.activeLines.clear();
+            this.activeLines.add(lastActiveIndex);
+            this.scrollToActiveLine(lastActiveLine);
+        }
+
+        this.animationFrame = requestAnimationFrame(() => this.animate());
+    }
+
+    scrollToActiveLine(activeLine) {
+        const now = Date.now();
+        if (now - this.lastScrollTime < 50) return;
+
+        const containerHeight = this.lyricsContainer.clientHeight;
+        const lineOffset = activeLine.offsetTop;
+        const lineHeight = activeLine.offsetHeight;
+
+        this.targetTransformY = -(lineOffset - (containerHeight - lineHeight) / 2);
+
+        if (!this.animating) {
+            this.animating = true;
+            this.smoothScroll();
+        }
+
+        this.lastScrollTime = now;
+    }
+
+    smoothScroll() {
+        const diff = this.targetTransformY - this.currentTransformY;
+        const delta = diff * 0.15;
+
+        if (Math.abs(diff) < 0.5) {
+            this.animating = false;
+            return;
+        }
+
+        this.currentTransformY += delta;
+        this.scrollWrapper.style.transform = `translateY(${this.currentTransformY}px)`;
+
+        requestAnimationFrame(() => this.smoothScroll());
     }
 }
 

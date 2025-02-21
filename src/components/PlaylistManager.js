@@ -234,9 +234,15 @@ class PlaylistManager {
 
     async setPlayingNow(index, replay = true) {
         try {
+            if (this.playlist.length === 0) {
+                this.uiManager.showDefaultUi();
+                return;
+            }
+    
             if (index < 0 || index >= this.playlist.length) {
                 throw new Error("无效的播放索引");
             }
+    
 
             const song = this.playlist[index];
             
@@ -315,7 +321,6 @@ class PlaylistManager {
             coverImg.style.opacity = '1';
         }, 300);
     }
-    // 片段：修改 PlaylistManager 中的 tryPlayWithRetry 方法
     async tryPlayWithRetry(song, maxRetries = 2) {
         let lastError;
         const playButton = document.querySelector(".control>.buttons>.play");
@@ -327,31 +332,31 @@ class PlaylistManager {
             try {
                 let currentUrl = song.audio;
                 if (cacheEnabled) {
-                    const cached = window.app.cacheManager.getCachedItem("audio_" + song.bvid);
+                    const cached = this.cacheManager.getCachedItem("audio_" + song.bvid);
                     if (cached) {
                         currentUrl = cached;
                         song.audio = currentUrl;
                     }
                 }
                 if (this.isUrlExpired(currentUrl) || lastError) {
-                    const urls = await window.app.musicSearcher.getAudioLink(song.bvid, true);
+                    const urls = await this.musicSearcher.getAudioLink(song.bvid, true);
                     currentUrl = urls[0];
                     song.audio = currentUrl;
                     this.updateUrlExpiryTime(currentUrl);
                     this.savePlaylists();
                     if (cacheEnabled) {
-                        window.app.cacheManager.cacheItem("audio_" + song.bvid, currentUrl);
+                        this.cacheManager.cacheItem("audio_" + song.bvid, currentUrl);
                     }
                 }
                 const response = await axios.get(currentUrl);
                 if (response.status === 403) {
-                    const urls = await window.app.musicSearcher.getAudioLink(song.bvid, true);
+                    const urls = await this.musicSearcher.getAudioLink(song.bvid, true);
                     currentUrl = urls[1];
                     song.audio = currentUrl;
                     this.updateUrlExpiryTime(currentUrl);
                     this.savePlaylists();
                     if (cacheEnabled) {
-                        window.app.cacheManager.cacheItem("audio_" + song.bvid, currentUrl);
+                        this.cacheManager.cacheItem("audio_" + song.bvid, currentUrl);
                     }
                 }
                 this.audioPlayer.audio.src = currentUrl;
@@ -364,7 +369,7 @@ class PlaylistManager {
                     await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
                 } else {
                     document.querySelector(".control>.buttons>.play").classList = "play paused";
-                    throw error;
+                    this.uiManager.showNotification('播放出错: ' + error.message, 'error');
                 }
             } finally {
                 this.isLoading = false;
@@ -417,14 +422,14 @@ class PlaylistManager {
         
         // 尝试从缓存获取
         if (cacheEnabled) {
-            const cached = window.app.cacheManager.getCachedItem("audio_" + song.bvid);
+            const cached = this.cacheManager.getCachedItem("audio_" + song.bvid);
             if (cached && !this.isUrlExpired(cached)) {
                 return cached;
             }
         }
 
         // 获取新的音频URL
-        const urls = await window.app.musicSearcher.getAudioLink(song.bvid, true);
+        const urls = await this.musicSearcher.getAudioLink(song.bvid, true);
         if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
 
         const url = urls[0];
@@ -433,7 +438,7 @@ class PlaylistManager {
 
         // 缓存新的URL
         if (cacheEnabled) {
-            window.app.cacheManager.cacheItem("audio_" + song.bvid, url);
+            this.cacheManager.cacheItem("audio_" + song.bvid, url);
         }
 
         return url;
@@ -476,21 +481,13 @@ class PlaylistManager {
     
         if (this.settingManager.getSetting("background") === "video") {
             // 移除旧视频及其事件监听器
-            const oldVideo = document.querySelector('video');
-            if (oldVideo) {
-                oldVideo.pause();
-                oldVideo.remove();
-            }
+            const oldVideos = document.querySelectorAll('video');
+            oldVideos.forEach(video => {
+                video.pause();
+                video.remove();
+            });
     
             try {
-                let videoUrl = song.video;
-                if (!videoUrl || this.isUrlExpired(videoUrl)) {
-                    videoUrl = await this.tryGetVideoUrl(song.bvid, song.cid);
-                    song.video = videoUrl;
-                    this.updateUrlExpiryTime(videoUrl);
-                    this.savePlaylists();
-                }
-    
                 const video = document.createElement('video');
                 video.style.position = 'absolute';
                 video.style.width = '100%';
@@ -500,89 +497,40 @@ class PlaylistManager {
                 video.style.objectFit = 'cover';
                 video.muted = true;
                 video.playsInline = true;
+
+                // 启用流式加载
                 video.preload = 'auto';
-    
-                // 优化视频同步逻辑
-                let syncInProgress = false;
-                const syncVideo = async () => {
-                    if (syncInProgress) return;
-                    
-                    try {
-                        syncInProgress = true;
-                        const timeDiff = Math.abs(video.currentTime - this.audioPlayer.audio.currentTime);
-                        
-                        if (timeDiff > 0.1) {
-                            video.currentTime = this.audioPlayer.audio.currentTime;
-                            // 等待视频时间更新
-                            await new Promise(resolve => {
-                                const checkSync = () => {
-                                    if (Math.abs(video.currentTime - this.audioPlayer.audio.currentTime) <= 0.1) {
-                                        resolve();
-                                    } else {
-                                        requestAnimationFrame(checkSync);
-                                    }
-                                };
-                                checkSync();
-                            });
-                        }
-                    } finally {
-                        syncInProgress = false;
-                    }
-                };
-    
-                // 视频加载完成后的处理
-                video.addEventListener('loadedmetadata', async () => {
-                    await syncVideo();
+                video.addEventListener('loadedmetadata', () => {
+                    // 视频元数据加载完成后立即开始播放
                     if (!this.audioPlayer.audio.paused) {
-                        await video.play();
+                        video.play();
                     }
                 });
-    
-                // 优化事件监听
-                const handlePlay = async () => {
-                    if (video.paused) {
-                        await syncVideo();
-                        await video.play();
-                    }
-                };
-    
-                const handlePause = () => {
-                    video.pause();
-                };
-    
-                const handleSeeking = async () => {
-                    await syncVideo();
-                };
-    
-                this.audioPlayer.audio.addEventListener("play", handlePlay);
-                this.audioPlayer.audio.addEventListener("pause", handlePause);
-                this.audioPlayer.audio.addEventListener("seeking", handleSeeking);
-    
-                // 使用 requestAnimationFrame 进行周期性同步
-                let rafId = null;
-                const periodicSync = async () => {
-                    await syncVideo();
-                    rafId = requestAnimationFrame(periodicSync);
-                };
-                rafId = requestAnimationFrame(periodicSync);
-    
-                // 清理函数
-                const cleanup = () => {
-                    cancelAnimationFrame(rafId);
-                    this.audioPlayer.audio.removeEventListener("play", handlePlay);
-                    this.audioPlayer.audio.removeEventListener("pause", handlePause);
-                    this.audioPlayer.audio.removeEventListener("seeking", handleSeeking);
-                };
-    
-                // 视频元素移除时的清理
-                video.addEventListener("remove", cleanup);
-    
-                // 设置视频源并添加到页面
-                video.src = videoUrl;
+
+                video.addEventListener('canplay', () => {
+                    // 当有足够数据可以播放时同步进度
+                    video.currentTime = this.audioPlayer.audio.currentTime;
+                });
+
+                // 添加视频源
+                let videoUrl = song.video;
+                if (!videoUrl || this.isUrlExpired(videoUrl)) {
+                    videoUrl = await this.tryGetVideoUrl(song.bvid, song.cid);
+                    song.video = videoUrl;
+                    this.updateUrlExpiryTime(videoUrl);
+                    this.savePlaylists();
+                }
+
+                // 使用 MediaSource 支持流式加载
+                if ('MediaSource' in window) {
+                    video.src = videoUrl;
+                }
+
+                // 添加到页面
                 document.querySelector('body').appendChild(video);
-    
+                this.bindVideoEvents(video);
             } catch (error) {
-                console.error("视频背景设置失败:", error);
+                this.uiManager.showNotification('视频背景设置失败: ' + error.message, 'error'); 
             }
         }
     }

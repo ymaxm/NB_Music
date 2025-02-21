@@ -98,8 +98,8 @@ class AudioPlayer {
                 document.querySelector(".control>.buttons>.play").classList = "play paused";
             }
         } catch (e) {
-            console.error("播放出错:", e);
             document.querySelector(".control>.buttons>.play").classList = "play paused";
+            this.playlistManager.tryPlayWithRetry(this.playlistManager.playlist[this.playlistManager.playingNow]);
         }
     }
 
