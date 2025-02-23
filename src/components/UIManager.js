@@ -219,7 +219,7 @@ class UIManager {
                 const oldVideo = document.querySelector('video');
                 if (oldVideo) oldVideo.remove();
                 const savedPlaylist = localStorage.getItem("nbmusic_playlist");
-                const currentSong = JSON.parse(savedPlaylist)[this.settingManager.getSetting('playingNow')];
+                const currentSong = JSON.parse(savedPlaylist)[localStorage.getItem("nbmusic_playing_now") || 0];
                 document.querySelector('html').style.setProperty('--bgul', `url(${currentSong.poster})`);
             }
             if (newValue === 'video' && oldValue !== 'video') {
@@ -228,8 +228,7 @@ class UIManager {
                 if (oldVideo) oldVideo.remove();
                 const savedPlaylist = localStorage.getItem("nbmusic_playlist");
 
-                const currentSong = JSON.parse(savedPlaylist)[this.settingManager.getSetting('playingNow')];
-                const videoUrl = currentSong.video;
+                const currentSong = JSON.parse(savedPlaylist)[localStorage.getItem("nbmusic_playing_now") || 0];                const videoUrl = currentSong.video;
                 if (videoUrl) {
                     const video = document.createElement('video');
                     video.autoplay = true;
@@ -604,20 +603,65 @@ class UIManager {
         div.querySelector(".artist").textContent = song.artist;
         return div;
     }
-    showNotification(message, type = 'info') {
+    /**
+     * 显示通知消息
+     * @param {string} message - 通知消息内容
+     * @param {string} type - 通知类型 ('info'|'success'|'warning'|'error')
+     * @param {object} options - 配置选项
+     * @param {boolean} options.showProgress - 是否显示进度条
+     * @param {number} options.progress - 进度值(0-100)
+     * @returns {HTMLElement} 通知元素
+     */
+    showNotification(message, type = 'info', {showProgress = false, progress = 0} = {}) {
+        // 1. 确保有容器
         let container = document.querySelector('.notification-container');
         if (!container) {
             container = document.createElement('div');
             container.className = 'notification-container';
             document.body.appendChild(container);
         }
+        
+        // 2. 创建通知元素
         const notification = document.createElement('div');
         notification.className = `notification ${type}`;
-        notification.textContent = message;
+        
+        // 3. 创建消息文本容器
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'notification-message';
+        messageDiv.textContent = message;
+        notification.appendChild(messageDiv);
+        
+        // 4. 如果需要进度条则添加
+        if (showProgress) {
+            const progressBar = document.createElement('div');
+            progressBar.className = 'notification-progress';
+            
+            const progressInner = document.createElement('div');
+            progressInner.className = 'notification-progress-inner';
+            progressInner.style.width = `${progress}%`;
+            
+            progressBar.appendChild(progressInner);
+            notification.appendChild(progressBar);
+        }
+        
+        // 5. 添加到容器
         container.appendChild(notification);
-        setTimeout(() => {
-            notification.remove();
-        }, 3000);
+        
+        // 6. 如果不是进度通知，3秒后自动移除
+        if (!showProgress) {
+            setTimeout(() => {
+                notification.classList.add('fade-out');
+                setTimeout(() => {
+                    notification.remove();
+                    // 如果容器为空则移除容器
+                    if (!container.children.length) {
+                        container.remove();
+                    }
+                }, 300);
+            }, 3000);
+        }
+        
+        return notification;
     }
     showDefaultUi() {
         // 设置默认UI显示

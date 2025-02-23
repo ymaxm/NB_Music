@@ -69,6 +69,8 @@ class MusiclistManager {
                     this.playlistManager.playlist = [...playlist.songs];
                     this.playlistManager.playlistName = playlist.name;
                     this.playlistManager.currentPlaylistId = playlist.id;
+                    this.playlistManager.playingNow = songIndex;
+                    this.playlistManager.currentTime = currentTime || 0;
 
                     // 设置播放进度
                     if (songIndex >= 0 && songIndex < playlist.songs.length) {
@@ -80,6 +82,9 @@ class MusiclistManager {
         }
 
         // 3. 更新 UI
+        this.uiManager.renderPlaylist();
+        this.playlistManager.setPlayingNow(this.playlistManager.playingNow);
+        this.audioPlayer.currentTime = this.playlistManager.currentTime;
         this.renderPlaylistList();
         this.renderSongList();
     }
@@ -218,6 +223,9 @@ class MusiclistManager {
 
     savePlaylists() {
         try {
+            if (this.playlists.length === 1 && this.playlists[0].name === "默认歌单" && this.playlists[0].songs.length === 0) {
+                return ;
+            }
             localStorage.setItem("nbmusic_playlists", JSON.stringify(this.playlists));
             // 保存当前播放的歌单ID和歌曲索引
             localStorage.setItem("nbmusic_current_playlist", JSON.stringify({
@@ -226,6 +234,7 @@ class MusiclistManager {
                 currentTime: this.playlistManager.audioPlayer?.audio?.currentTime || 0
             }));
         } catch (error) {
+            this.uiManager.showNotification("保存歌单失败: " + error.message, "error");
         }
     }
     renderPlaylistList() {
@@ -496,18 +505,21 @@ class MusiclistManager {
         this.renderSongList();
     }
     async importFromBiliFav(mediaId) {
+        let importNotification = null;
+        let lyricsNotification = null;
+        
         try {
-            // 1. 获取收藏夹信息保持不变
+            // 1. 获取收藏夹信息
             const favResponse = await axios.get(`https://api.bilibili.com/x/v3/fav/folder/info?media_id=${mediaId}`);
             if (favResponse.data.code !== 0) {
                 throw new Error('获取收藏夹信息失败');
             }
-
+    
             const favInfo = favResponse.data.data;
             const totalCount = favInfo.media_count;
             const pageSize = 20;
             const totalPages = Math.ceil(totalCount / pageSize);
-
+    
             // 创建新歌单
             const playlistTitle = `${favInfo.title}`;
             const playlistIndex = this.playlists.length;
@@ -516,37 +528,55 @@ class MusiclistManager {
                 name: playlistTitle,
                 songs: []
             });
-
+    
             // 2. 收集所有要添加的歌曲信息
             const songsToAdd = [];
-
+            let processedCount = 0;
+    
+            // 显示导入进度通知
+            importNotification = this.uiManager.showNotification(
+                `正在导入歌单: 0/${totalCount}`, 
+                'info',
+                { showProgress: true, progress: 0 }
+            );
+    
+            // 3. 逐页获取视频信息
             for (let page = 1; page <= totalPages; page++) {
                 const resourcesResponse = await axios.get(
                     `https://api.bilibili.com/x/v3/fav/resource/list?media_id=${mediaId}&pn=${page}&ps=${pageSize}&platform=web`
                 );
-
+    
                 if (resourcesResponse.data.code !== 0) continue;
-
+    
                 const medias = resourcesResponse.data.data.medias;
                 if (!medias) continue;
-
-                // 3. 对每个视频获取cid
+    
+                // 处理每个视频
                 for (const media of medias) {
                     if (media.attr === 1) continue; // 跳过失效视频
-
+    
                     try {
-                        // 获取视频cid
                         const cidResponse = await axios.get(`https://api.bilibili.com/x/web-interface/view?bvid=${media.bvid}`);
                         if (cidResponse.data.code === 0) {
                             songsToAdd.push({
                                 title: media.title,
                                 artist: media.upper.name,
                                 bvid: media.bvid,
-                                cid: cidResponse.data.data.cid, // 设置cid
+                                cid: cidResponse.data.data.cid,
                                 duration: media.duration,
                                 poster: media.cover,
-                                audio: null // 音频链接需要在播放时获取
+                                audio: null
                             });
+                            
+                            // 更新导入进度
+                            processedCount++;
+                            const progress = (processedCount / totalCount) * 100;
+                            
+                            // 更新进度条和文本
+                            importNotification.querySelector('.notification-message').textContent = 
+                                `正在导入歌单: ${processedCount}/${totalCount}`;
+                            importNotification.querySelector('.notification-progress-inner').style.width = 
+                                `${progress}%`;
                         }
                     } catch (error) {
                         console.warn(`获取视频 ${media.bvid} 的CID失败:`, error);
@@ -554,26 +584,42 @@ class MusiclistManager {
                     }
                 }
             }
-
-            // 4. 并行获取所有歌词
-            console.log(`开始获取 ${songsToAdd.length} 首歌的歌词...`);
-
+    
+            // 导入完成后移除通知
+            importNotification.remove();
+    
+            // 4. 获取歌词
+            let lyricsCount = 0;
+            lyricsNotification = this.uiManager.showNotification(
+                `正在获取歌词: 0/${songsToAdd.length}`,
+                'info',
+                { showProgress: true, progress: 0 }
+            );
+            
             const songsWithLyrics = [];
             for (const song of songsToAdd) {
                 try {
                     let lyric;
                     if (this.lyricSearchType === 'custom') {
-                        // 显示歌词搜索对话框
                         lyric = await this.showLyricSearchDialog(song);
                     } else {
-                        // 使用默认标题搜索
                         lyric = await this.musicSearcher.getLyrics(song.title);
                     }
-
+    
                     songsWithLyrics.push({
                         ...song,
                         lyric: lyric || "暂无歌词，尽情欣赏音乐"
                     });
+                    
+                    // 更新歌词获取进度
+                    lyricsCount++;
+                    const progress = (lyricsCount / songsToAdd.length) * 100;
+                    
+                    // 更新进度条和文本
+                    lyricsNotification.querySelector('.notification-message').textContent = 
+                        `正在获取歌词: ${lyricsCount}/${songsToAdd.length}`;
+                    lyricsNotification.querySelector('.notification-progress-inner').style.width = 
+                        `${progress}%`;
                 } catch (error) {
                     console.warn(`获取歌词失败: ${song.title}`, error);
                     songsWithLyrics.push({
@@ -582,21 +628,34 @@ class MusiclistManager {
                     });
                 }
             }
-
-
-            // 5. 将带有歌词的歌曲添加到播放列表
+    
+            // 歌词获取完成后移除通知
+            lyricsNotification.remove();
+    
+            // 5. 更新歌单
             this.playlists[playlistIndex].songs = songsWithLyrics;
-
-            // 6. 触发UI更新和保存
             this.handlePlaylistUpdate();
             this.savePlaylists();
-
+    
+            // 6. 显示完成消息
+            this.uiManager.showNotification(
+                `成功导入 ${songsWithLyrics.length} 首歌曲到歌单"${playlistTitle}"`,
+                'success'
+            );
+    
             return {
                 success: true,
                 message: `成功导入 ${songsWithLyrics.length} 首歌曲到歌单"${playlistTitle}"`
             };
-
+    
         } catch (error) {
+            // 发生错误时移除进度通知
+            importNotification?.remove();
+            lyricsNotification?.remove();
+            
+            // 显示错误消息
+            this.uiManager.showNotification('导入失败: ' + error.message, 'error');
+            
             console.error('从B站收藏夹导入失败:', error);
             return {
                 success: false,

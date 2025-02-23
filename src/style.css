@@ -816,6 +816,7 @@ i:hover {
 #lovelist {
     overflow-y: auto;
 }
+
 #lovelist>.song {
     border: 1px solid var(--border-1);
 }
@@ -1885,7 +1886,7 @@ select:disabled {
 }
 
 .notification.info {
-    background-color: var(--theme-1);
+    background-color: #ffffff00;
 }
 
 .notification.success {
@@ -2082,4 +2083,148 @@ select:disabled {
 .dialog-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+.update-container {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(8px);
+    background-color: rgba(0, 0, 0, 0.4);
+    z-index: 9999;
+}
+
+.update-content {
+    backdrop-filter: blur(20px);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    transform: scale(0.9);
+    opacity: 0;
+}
+
+.update-container:not(.hide) .update-content {
+    transform: scale(1);
+    opacity: 1;
+}
+
+.update-actions button {
+    margin: 0 8px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    background: var(--color-3);
+}
+
+/* 通知容器 */
+.notification-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* 通知样式 */
+.notification {
+    background: var(--bg-2);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border-1);
+    border-radius: 8px;
+    padding: 12px 20px;
+    min-width: 280px;
+    position: relative;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    animation: slideIn 0.3s ease;
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-content: center;
+    align-items: center;
+    
+}
+
+/* 不同类型的通知样式 */
+.notification.info {
+    border-left: 4px solid var(--theme-1);
+}
+
+.notification.success {
+    border-left: 4px solid var(--success);
+}
+
+.notification.warning {
+    border-left: 4px solid var(--warning);
+}
+
+.notification.error {
+    border-left: 4px solid var(--error);
+}
+
+/* 消息文本样式 */
+.notification-message {
+    /* margin-bottom: 8px; */
+    color: var(--text);
+}
+
+/* 进度条容器 */
+.notification-progress {
+    bottom: 0;
+    left: 0;
+    width: 80%;
+    height: 4px;
+    background: var(--border-1);
+    border-radius: 0 0 8px 8px;
+    margin-bottom: 6px;
+    overflow: hidden;
+}
+
+/* 进度条 */
+.notification-progress-inner {
+    height: 100%;
+    background: linear-gradient(90deg, var(--theme-1), var(--theme-2));
+    width: 0;
+    transition: width 0.3s ease;
+    border-radius: 2px;
+    animation: gradientMove 2s linear infinite;
+}
+
+/* 淡出动画 */
+.notification.fade-out {
+    opacity: 0;
+    transform: translateX(100%);
+    transition: all 0.3s ease;
+}
+
+/* 滑入动画 */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* 渐变动画 */
+@keyframes gradientMove {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
 }

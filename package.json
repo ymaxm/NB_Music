@@ -1,6 +1,6 @@
 {
     "name": "nb_music",
-    "version": "0.1.6",
+    "version": "0.2.8",
     "description": "一款在线音乐播放器",
     "main": "src/main.js",
     "scripts": {
@@ -34,16 +34,17 @@
         "@pixi/filter-bulge-pinch": "^5.1.1",
         "@pixi/filter-color-matrix": "^7.4.2",
         "@pixi/sprite": "^7.4.2",
+        "NeteaseCloudMusicApi": "^4.25.0",
         "axios": "^1.7.9",
         "bootstrap-icons": "^1.11.3",
         "browser-id3-writer": "^6.2.0",
         "electron-reload": "^2.0.0-alpha.1",
         "electron-store": "8.2.0",
+        "electron-updater": "^6.3.9",
         "jsmediatags": "^3.9.7",
         "jss": "^10.10.0",
         "jss-preset-default": "^10.10.0",
         "md5": "^2.3.0",
-        "NeteaseCloudMusicApi": "^4.25.0",
         "puppeteer": "^24.0.0",
         "qrcode": "^1.5.4"
     },
@@ -52,6 +53,13 @@
         "productName": "NB Music",
         "directories": {
             "output": "dist"
+        },
+        "appId": "com.nb.music",
+        "asar": true,
+        "publish": {
+            "provider": "github",
+            "owner": "NB-Group",
+            "repo": "nb_music"
         },
         "win": {
             "icon": "./icons/icon.ico",
@@ -103,7 +111,8 @@
             "uninstallerIcon": "./icons/icon.ico",
             "installerHeaderIcon": "./icons/icon.ico",
             "createDesktopShortcut": true,
-            "createStartMenuShortcut": true
+            "createStartMenuShortcut": true,
+            "shortcutName": "NB Music"
         }
     },
     "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"

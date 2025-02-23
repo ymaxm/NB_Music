@@ -10,6 +10,7 @@ const SettingManager = require("./components/SettingManager.js");
 const MusiclistManager = require("./components/MusiclistManager.js");
 const CacheManager = require("./components/CacheManager.js");
 const LoginManager = require("./components/LoginManager.js");
+const UpdateManager = require("./components/UpdateManager.js");
 
 class App {
     constructor() {
@@ -41,9 +42,11 @@ class App {
             this.musiclistManager = new MusiclistManager(this.playlistManager);
             this.cacheManager = new CacheManager();
             this.loginManager = new LoginManager();
+            this.updateManager = new UpdateManager();
     
-            // 4. 更新所有组件间的引用关系（保持原有的所有依赖）
+            // 4. 更新所有组件间的引用关系
             this.audioPlayer.playlistManager = this.playlistManager;
+            this.audioPlayer.uimanager = this.uiManager;
             this.uiManager.playlistManager = this.playlistManager;
             this.uiManager.audioPlayer = this.audioPlayer;
             this.uiManager.favoriteManager = this.favoriteManager;
@@ -60,6 +63,7 @@ class App {
             this.playlistManager.cacheManager = this.cacheManager;
             this.musiclistManager.uiManager = this.uiManager;
             this.musiclistManager.musicSearcher = this.musicSearcher;
+            this.musiclistManager.audioPlayer = this.audioPlayer;
     
             // 5. 暴露全局引用
             window.app = this;

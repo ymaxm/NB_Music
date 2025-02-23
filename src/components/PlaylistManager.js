@@ -238,14 +238,14 @@ class PlaylistManager {
                 this.uiManager.showDefaultUi();
                 return;
             }
-    
+
             if (index < 0 || index >= this.playlist.length) {
                 throw new Error("无效的播放索引");
             }
-    
+
 
             const song = this.playlist[index];
-            
+
             // 如果正在加载同一首歌，直接返回
             if (this.currentPlayingBvid === song.bvid && this.isLoading) {
                 return;
@@ -256,7 +256,7 @@ class PlaylistManager {
                 this.currentLoadingController.abort();
             }
             this.currentLoadingController = new AbortController();
-            
+
             // 更新当前加载状态
             this.isLoading = true;
             this.currentPlayingBvid = song.bvid;
@@ -315,7 +315,7 @@ class PlaylistManager {
         // 更新封面图片
         const coverImg = document.querySelector(".player-content .cover .cover-img");
         coverImg.style.opacity = '0';
-        
+
         setTimeout(() => {
             this.updateUIForCurrentSong(song);
             coverImg.style.opacity = '1';
@@ -381,37 +381,37 @@ class PlaylistManager {
     async loadAndPlayAudio(song, replay, signal) {
         const playButton = document.querySelector(".control>.buttons>.play");
         const progressBar = document.querySelector(".player .control .progress .progress-bar .progress-bar-inner");
-        
+
         try {
             playButton.disabled = true;
             progressBar.classList.add('loading');
-    
+
             // 重置播放进度和音量
             this.resetPlaybackState(replay);
-    
+
             // 获取并设置音频
             const audioUrl = await this.getAudioUrl(song, signal);
             if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
-            
+
             this.audioPlayer.audio.src = audioUrl;
-            
+
             // 如果不是重放且有保存的播放进度，则恢复进度
             if (!replay && this.currentTime > 0) {
                 this.audioPlayer.audio.currentTime = this.currentTime;
                 this.currentTime = 0; // 恢复后清除保存的进度
             }
-            
+
             // 更新媒体会话信息
             await this.updateMediaSession(song);
             if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
-    
+
             // 播放音频
             await this.audioPlayer.audio.play();
             playButton.classList = "play played";
-    
+
             // 保存播放状态
             this.savePlaylists();
-    
+
         } finally {
             playButton.disabled = false;
             progressBar.classList.remove('loading');
@@ -419,7 +419,7 @@ class PlaylistManager {
     }
     async getAudioUrl(song, signal) {
         const cacheEnabled = this.settingManager.getSetting("cacheEnabled");
-        
+
         // 尝试从缓存获取
         if (cacheEnabled) {
             const cached = this.cacheManager.getCachedItem("audio_" + song.bvid);
@@ -478,7 +478,7 @@ class PlaylistManager {
         document.querySelector(".player-content .cover .cover-img").src = song.poster;
         document.querySelector(".player .info .title").textContent = song.title;
         document.querySelector(".player .info .artist").textContent = song.artist;
-    
+
         if (this.settingManager.getSetting("background") === "video") {
             // 移除旧视频及其事件监听器
             const oldVideos = document.querySelectorAll('video');
@@ -486,7 +486,7 @@ class PlaylistManager {
                 video.pause();
                 video.remove();
             });
-    
+
             try {
                 const video = document.createElement('video');
                 video.style.position = 'absolute';
@@ -530,11 +530,47 @@ class PlaylistManager {
                 document.querySelector('body').appendChild(video);
                 this.bindVideoEvents(video);
             } catch (error) {
-                this.uiManager.showNotification('视频背景设置失败: ' + error.message, 'error'); 
+                this.uiManager.showNotification('视频背景设置失败: ' + error.message, 'error');
             }
         }
     }
+    bindVideoEvents(video) {
+        // 音频播放/暂停时同步控制视频
+        this.audioPlayer.audio.addEventListener('play', () => {
+            video.play();
+        });
 
+        this.audioPlayer.audio.addEventListener('pause', () => {
+            video.pause();
+        });
+
+        // 监听音频跳转事件,同步视频进度
+        this.audioPlayer.audio.addEventListener('seeking', () => {
+            video.currentTime = this.audioPlayer.audio.currentTime;
+        });
+
+        // 监听视频错误
+        video.addEventListener('error', () => {
+            console.warn('视频播放出错,切换到封面背景');
+            video.remove();
+            // 切换回封面背景
+            const currentSong = this.playlist[this.playingNow];
+            document.querySelector('html').style.setProperty('--bgul', `url(${currentSong.poster})`);
+        });
+
+        // 优化性能
+        video.addEventListener('canplay', () => {
+            // 视频可以播放时再显示
+            video.style.opacity = '1';
+        });
+
+        // 初始状态
+        video.style.opacity = '0';
+        if (!this.audioPlayer.audio.paused) {
+            // 如果音频正在播放,则自动开始视频
+            video.play();
+        }
+    }
     changePlaylistName(name) {
         try {
             this.playlistName = name;
@@ -581,7 +617,7 @@ class PlaylistManager {
                     }
                 }
             }
-    
+
             // 加载上次播放的位置
             const savedCurrentTime = localStorage.getItem("nbmusic_current_time");
             if (savedCurrentTime) {

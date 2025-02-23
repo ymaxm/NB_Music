@@ -72,7 +72,7 @@
         </div>
       </div>
       <div class="dialog-footer">
-        <button id="cancelImport" class="dialog-btn dialog-btn-secondary">取消</button>
+        <button id="cancelImport" class="dialog-btn dialog-btn-secondary">关闭</button>
         <button id="confirmImport" class="dialog-btn dialog-btn-primary">导入</button>
       </div>
     </div>
@@ -361,6 +361,21 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+  <div id="update-container" class="update-container hide">
+    <div class="update-content">
+      <div id="update-status">检查更新中...</div>
+      <div id="update-progress" class="progress-wrapper hide">
+        <div class="progress-text">下载进度: <span id="progress-percent">0%</span></div>
+        <div class="progress-bar">
+          <div id="progress-inner" class="progress-bar-inner"></div>
+        </div>
+      </div>
+      <div id="update-actions" class="update-actions hide">
+        <button id="update-now">立即更新</button>
+        <button id="update-later">稍后更新</button>
       </div>
     </div>
   </div>

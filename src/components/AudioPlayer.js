@@ -90,6 +90,10 @@ class AudioPlayer {
 
     async play() {
         try {
+            if (this.audio.src==="")
+            {
+                this.uimanager.showNotification("无音频链接"); 
+            }
             if (this.audio.paused) {
                 await this.audioPlay();
                 document.querySelector(".control>.buttons>.play").classList = "play played";

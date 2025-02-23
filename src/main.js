@@ -4,8 +4,65 @@ const puppeteer = require("puppeteer");
 const electronReload = require("electron-reload");
 const Storage = require("electron-store");
 const axios = require('axios');
+const { autoUpdater } = require("electron-updater");
 const storage = new Storage();
+function setupAutoUpdater(win) {
+    // 开发环境跳过更新检查
+    if (!app.isPackaged) return;
 
+    // 配置更新服务器
+    autoUpdater.setFeedURL({
+        provider: 'github',
+        owner: 'NB-Group',
+        repo: 'NB_Music'
+    });
+
+    // 检查更新出错
+    autoUpdater.on('error', (err) => {
+        win.webContents.send('update-error', err.message);
+    });
+
+    // 检查到新版本
+    autoUpdater.on('update-available', (info) => {
+        win.webContents.send('update-available', info);
+    });
+
+    // 没有新版本
+    autoUpdater.on('update-not-available', () => {
+        win.webContents.send('update-not-available');
+    });
+
+    // 下载进度
+    autoUpdater.on('download-progress', (progress) => {
+        win.webContents.send('download-progress', progress);
+    });
+
+    // 更新下载完成
+    autoUpdater.on('update-downloaded', () => {
+        // 通知渲染进程
+        win.webContents.send('update-downloaded');
+
+        // 提示重启应用
+        const dialogOpts = {
+            type: 'info',
+            buttons: ['重启', '稍后'],
+            title: '应用更新',
+            message: '有新版本已下载完成,是否重启应用?'
+        };
+
+        require('electron').dialog.showMessageBox(dialogOpts).then((returnValue) => {
+            if (returnValue.response === 0) autoUpdater.quitAndInstall();
+        });
+    });
+
+    // 每小时检查一次更新
+    setInterval(() => {
+        autoUpdater.checkForUpdates();
+    }, 60 * 60 * 1000);
+
+    // 启动时检查更新
+    autoUpdater.checkForUpdates();
+}
 function loadCookies() {
     if (!storage.has("cookies")) return null;
     return storage.get("cookies");
@@ -55,7 +112,7 @@ function createWindow() {
         console.log('清除所有存储数据...');
         // 清除 electron-store 存储
         storage.clear();
-        
+
         // 清除 session 存储数据
         session.defaultSession.clearStorageData({
             storages: ['appcache', 'filesystem', 'indexdb', 'localstorage', 'shadercache', 'websql', 'serviceworkers', 'cachestorage'],
@@ -97,9 +154,10 @@ function createWindow() {
                 webSecurity: false // 禁用同源策略,允许跨域
             }
         });
+        setupAutoUpdater(win);
         win.loadFile("src/main.html");
         // if (!app.isPackaged) {
-            // win.webContents.openDevTools();
+        win.webContents.openDevTools();
         // }
         ipcMain.on("window-minimize", () => {
             win.minimize();
@@ -196,8 +254,8 @@ app.whenReady().then(async () => {
     const cookieString = await getBilibiliCookies();
     if (cookieString) {
         session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
-            if (details.url.includes("bilibili.com") || 
-                details.url.includes("bilivideo.cn") || 
+            if (details.url.includes("bilibili.com") ||
+                details.url.includes("bilivideo.cn") ||
                 details.url.includes("bilivideo.com")) {
                 details.requestHeaders["Cookie"] = cookieString;
                 details.requestHeaders["referer"] = "https://www.bilibili.com/";
