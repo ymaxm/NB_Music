@@ -9,7 +9,8 @@
         "publish": "electron-builder build --publish always",
         "run": "electron .",
         "debug": "electron --inspect=5858 .",
-        "debug-brk": "electron --inspect-brk=5858 ."
+        "debug-brk": "electron --inspect-brk=5858 .",
+        "run:clear": "electron . --clear-storage"
     },
     "keywords": [],
     "author": {

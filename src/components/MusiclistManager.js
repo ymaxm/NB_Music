@@ -5,13 +5,16 @@ class MusiclistManager {
         this.playlists = [];
         this.activePlaylistIndex = 0;
         this.lyricSearchType = 'auto';
+        this.uiManager = null;
 
         this.musicListContainer = document.querySelector(".content .music-list");
         this.playlistSection = this.musicListContainer.querySelector("#playlistList");
         this.songSection = this.musicListContainer.querySelector("#songList");
         this.newPlaylistBtn = this.musicListContainer.querySelector("#newPlaylist");
 
-        this.loadLastPlayedPlaylist();
+        setTimeout(() => {
+            this.loadLastPlayedPlaylist();
+        }, 0);
 
         if (this.playlists.length === 0) {
             // 创建默认歌单
@@ -26,6 +29,9 @@ class MusiclistManager {
         this.init();
     }
     loadLastPlayedPlaylist() {
+        if (this.uiManager && typeof this.uiManager.showDefaultUi === 'function') {
+            this.uiManager.showDefaultUi();
+        }
         // 1. 加载所有歌单数据 
         const savedPlaylists = localStorage.getItem("nbmusic_playlists");
         if (savedPlaylists) {

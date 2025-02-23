@@ -20,15 +20,22 @@ async function getBilibiliCookies() {
     if (cachedCookies) {
         return cachedCookies;
     }
-    const browser = await puppeteer.launch();
-    const page = await browser.newPage();
-    await page.goto("https://www.bilibili.com");
-    const cookies = await page.cookies();
-    // console.log(typeof cookies);
-    saveCookies(formatCookieString(cookies));
-    await browser.close();
-    // const formattedCookies = cookies.map((cookie) => `${cookie.name}=${cookie.value}`).join("; ");
-    return cookies;
+    try {
+        const browser = await puppeteer.launch({
+            headless: true,
+            defaultViewport: null
+        });
+        const page = await browser.newPage();
+        await page.goto("https://www.bilibili.com");
+        const cookies = await page.cookies();
+        const cookieString = formatCookieString(cookies);
+        saveCookies(cookieString);
+        await browser.close();
+        return cookieString;
+    } catch (error) {
+        console.error('获取B站cookies失败:', error);
+        return '';
+    }
 }
 
 function getIconPath() {
@@ -44,6 +51,19 @@ function getIconPath() {
     }
 }
 function createWindow() {
+    if (process.argv.includes('--clear-storage')) {
+        console.log('清除所有存储数据...');
+        // 清除 electron-store 存储
+        storage.clear();
+        
+        // 清除 session 存储数据
+        session.defaultSession.clearStorageData({
+            storages: ['appcache', 'filesystem', 'indexdb', 'localstorage', 'shadercache', 'websql', 'serviceworkers', 'cachestorage'],
+        }).then(() => {
+            console.log('存储数据已清除');
+        });
+    }
+
     const gotTheLock = app.requestSingleInstanceLock();
     if (!gotTheLock) {
         app.quit();
@@ -78,9 +98,9 @@ function createWindow() {
             }
         });
         win.loadFile("src/main.html");
-        if (!app.isPackaged) {
-            win.webContents.openDevTools();
-        }
+        // if (!app.isPackaged) {
+            // win.webContents.openDevTools();
+        // }
         ipcMain.on("window-minimize", () => {
             win.minimize();
         });
@@ -173,15 +193,19 @@ app.whenReady().then(async () => {
         });
     }
     createWindow();
-    const cookie = await getBilibiliCookies();
-    session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
-        if (details.url.includes("bilibili.com") || details.url.includes("bilivideo.cn") || details.url.includes("bilivideo.com")) {
-            details.requestHeaders["Cookie"] = cookie;
-            details.requestHeaders["referer"] = "https://www.bilibili.com/";
-            details.requestHeaders["user-agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3";
-        }
-        callback({ requestHeaders: details.requestHeaders });
-    });
+    const cookieString = await getBilibiliCookies();
+    if (cookieString) {
+        session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
+            if (details.url.includes("bilibili.com") || 
+                details.url.includes("bilivideo.cn") || 
+                details.url.includes("bilivideo.com")) {
+                details.requestHeaders["Cookie"] = cookieString;
+                details.requestHeaders["referer"] = "https://www.bilibili.com/";
+                details.requestHeaders["user-agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3";
+            }
+            callback({ requestHeaders: details.requestHeaders });
+        });
+    }
 });
 app.on("window-all-closed", () => {
     if (process.platform !== "darwin") {

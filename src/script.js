@@ -20,37 +20,29 @@ class App {
 
     initializeComponents() {
         try {
-            // 创建音乐搜索器
-            this.musicSearcher = new MusicSearcher();
-
-            // 创建设置管理器
+            // 1. 创建基础组件
             this.settingManager = new SettingManager();
-
-            // 创建播放器组件
-            this.audioPlayer = new AudioPlayer(this.playlistManager);
-
-            // 创建歌词播放器
+            this.audioPlayer = new AudioPlayer(null); // 暂时传入null
             this.lyricsPlayer = new LyricsPlayer("暂无歌词，尽情欣赏音乐", this.audioPlayer.audio, this.settingManager);
-
-            // 创建UI管理器
-            this.uiManager = new UIManager(this.settingManager, this.audioPlayer, this.playlistManager, this.favoriteManager, this.musicSearcher);
-
-            // 创建播放列表管理器
+            
+            // 2. 先创建UI管理器（因为MusiclistManager依赖它）
+            this.uiManager = new UIManager(
+                this.settingManager, 
+                this.audioPlayer,
+                null,  // playlistManager临时为null
+                null,  // favoriteManager临时为null
+                null   // musicSearcher临时为null
+            );
+            
+            // 3. 创建其他组件
             this.playlistManager = new PlaylistManager(this.audioPlayer, this.lyricsPlayer, this.uiManager);
-
-            // 创建收藏管理器
             this.favoriteManager = new FavoriteManager(this.playlistManager, this.uiManager);
-
-            // 创建歌单管理器
+            this.musicSearcher = new MusicSearcher();
             this.musiclistManager = new MusiclistManager(this.playlistManager);
-
-            // 创建缓存管理器
             this.cacheManager = new CacheManager();
-
-            // 创建登录管理器
             this.loginManager = new LoginManager();
-
-            // 更新组件间的引用
+    
+            // 4. 更新所有组件间的引用关系（保持原有的所有依赖）
             this.audioPlayer.playlistManager = this.playlistManager;
             this.uiManager.playlistManager = this.playlistManager;
             this.uiManager.audioPlayer = this.audioPlayer;
@@ -68,8 +60,8 @@ class App {
             this.playlistManager.cacheManager = this.cacheManager;
             this.musiclistManager.uiManager = this.uiManager;
             this.musiclistManager.musicSearcher = this.musicSearcher;
-
-            // 暴露全局引用
+    
+            // 5. 暴露全局引用
             window.app = this;
         } catch (error) {
             console.error("组件初始化失败:", error);
