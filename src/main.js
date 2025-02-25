@@ -108,18 +108,18 @@ function getIconPath() {
     }
 }
 function createWindow() {
-    if (process.argv.includes('--clear-storage')) {
-        console.log('清除所有存储数据...');
-        // 清除 electron-store 存储
-        storage.clear();
+    // if (process.argv.includes('--clear-storage')) {
+    //     console.log('清除所有存储数据...');
+    //     // 清除 electron-store 存储
+    //     storage.clear();
 
-        // 清除 session 存储数据
-        session.defaultSession.clearStorageData({
-            storages: ['appcache', 'filesystem', 'indexdb', 'localstorage', 'shadercache', 'websql', 'serviceworkers', 'cachestorage'],
-        }).then(() => {
-            console.log('存储数据已清除');
-        });
-    }
+    //     // 清除 session 存储数据
+    //     session.defaultSession.clearStorageData({
+    //         storages: ['appcache', 'filesystem', 'indexdb', 'localstorage', 'shadercache', 'websql', 'serviceworkers', 'cachestorage'],
+    //     }).then(() => {
+    //         console.log('存储数据已清除');
+    //     });
+    // }
 
     const gotTheLock = app.requestSingleInstanceLock();
     if (!gotTheLock) {

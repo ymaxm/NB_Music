@@ -2,9 +2,11 @@ class SettingManager {
     constructor() {
         this.settings = {
             theme: 'dark',
-            background: 'none',
-            lyricSearchType: 'auto',
-            lyricsEnabled: true
+            background: 'video',
+            lyricSearchType: 'custom',
+            lyricsEnabled: true,
+            extractTitle: "auto",
+            cacheEnabled: false,
         };
         this.listeners = new Map();
         this.STORAGE_KEY = 'app_settings';

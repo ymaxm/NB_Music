@@ -27,6 +27,11 @@
     --text: #ffffff;
     --bg-1: rgba(28, 28, 28, 0.95);
     --border-1: rgba(255, 255, 255, 0.1);
+
+    --animation-duration: 0.35s;
+    --animation-timing: cubic-bezier(0.4, 0, 0.2, 1);
+    --animation-timing-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --animation-timing-spring: cubic-bezier(0.68, -0.6, 0.32, 1.6);
 }
 
 :root.light {
@@ -355,30 +360,27 @@ body {
 }
 
 @keyframes loading {
-    from {
+    0% {
         left: -50%;
+        width: 30%;
+        opacity: 0.8;
     }
-
-    to {
+    50% {
+        width: 45%;
+        opacity: 1;
+    }
+    100% {
         left: 100%;
-    }
-}
-
-@keyframes loading {
-    from {
-        left: -50%;
-    }
-
-    to {
-        left: 100%;
+        width: 30%;
+        opacity: 0.8;
     }
 }
 
 .progress-bar-inner.loading {
     width: 30% !important;
-    background: linear-gradient(90deg, var(--theme-1), var(--theme-2));
+    background: linear-gradient(90deg, transparent, var(--theme-1), var(--theme-2), transparent);
     position: relative;
-    animation: loading 1.5s ease-in-out infinite;
+    animation: loading 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
 .progress-bar-inner {
@@ -420,7 +422,7 @@ body {
     border-radius: 50%;
     mask-image: radial-gradient(circle at center, var(--rgba-7) 22%, var(--rgba-8) 53%);
     -webkit-mask-image: radial-gradient(circle at center, var(--rgba-7) 22%, var(--rgba-8) 53%);
-    transition: all 0.3s ease;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); /* 弹性曲线 */
     background-size: 200% 100%;
     animation: gradientMove 3s ease infinite;
     display: flex;
@@ -428,8 +430,9 @@ body {
     justify-content: center;
 }
 
-.buttons>.play:hover {
-    transform: scale(1.05);
+.buttons > .play:hover {
+    transform: scale(1.05) translateY(-3px);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
 }
 
 .buttons>.play::before {
@@ -584,7 +587,7 @@ body {
     border: none;
     background: var(--color-14);
     font-size: 14px;
-    transition: all 0.2s ease;
+    transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
     backdrop-filter: blur(20px);
     -webkit-app-region: no-drag;
 }
@@ -592,7 +595,8 @@ body {
 .search-music:focus {
     outline: none;
     background: var(--rgba-10);
-    box-shadow: 0 0 0 2px var(--border-1);
+    transform: translateY(-3px) scale(1.01);
+    box-shadow: 0 8px 24px var(--rgba-11);
 }
 
 
@@ -884,7 +888,7 @@ i:hover {
 
 /* 页面切换动画 */
 .content>div {
-    animation: fadeIn 0.2s ease-out;
+    animation: fadeIn 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 i.loved {
@@ -897,9 +901,8 @@ i.loved {
 
 @keyframes fadeIn {
     from {
-        transform: translateY(10px);
+        transform: translateY(10px) scale(0.96);
     }
-
     to {
         transform: translateY(0);
     }
@@ -907,26 +910,31 @@ i.loved {
 
 /* 播放列表歌曲项动画 */
 #playing-list .song {
-    transition: all var(--animation-duration) var(--animation-timing);
+    transition: all 0.45s cubic-bezier(0.16, 1, 0.3, 1);
     transform-origin: center;
     opacity: 1;
     overflow: hidden;
+    position: relative;
+    will-change: transform, opacity, max-height;
+    z-index: 1;
 }
 
 #playing-list .song.adding {
     opacity: 0;
-    transform: translateY(20px);
+    transform: scale(0.95);
     max-height: 0;
     margin: 0;
     padding: 0;
+    filter: blur(3px);
 }
 
 #playing-list .song.removing {
     opacity: 0;
-    transform: translateX(100px);
+    transform: scale(0.92) rotate(-1deg);
     max-height: 0;
     margin: 0;
     padding: 0;
+    filter: blur(2px);
 }
 
 /* 播放状态动画 */
@@ -945,18 +953,16 @@ i.loved {
     height: 100%;
     width: 3px;
     background: linear-gradient(0deg, var(--theme-1), var(--theme-2));
-    animation: playingPulse 2s infinite;
+    animation: playingPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 @keyframes playingPulse {
     0% {
         opacity: 0.6;
     }
-
     50% {
         opacity: 1;
     }
-
     100% {
         opacity: 0.6;
     }
@@ -967,11 +973,9 @@ i.loved {
     0% {
         background-color: transparent;
     }
-
-    50% {
+    30% {
         background-color: var(--rgba-15);
     }
-
     100% {
         background-color: transparent;
     }
@@ -1020,21 +1024,18 @@ i.loved {
 .char {
     white-space: pre;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    opacity: 0.6;
     transform-origin: center;
 }
 
 .char.active {
     color: var(--text);
-    transform: scale(1.1);
+    font-size: 1.25em;
     opacity: 1;
     text-shadow: 0 0 8px var(--rgba-13);
 }
 
 .char.completed {
     color: var(--rgba-6);
-    transform: scale(1);
-    opacity: 0.4;
 }
 
 /* 控件动画 */
@@ -1043,7 +1044,8 @@ i.loved {
 }
 
 .buttons div:hover {
-    transform: scale(1.1);
+    transform: scale(1.05) translateY(-2px);
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
 }
 
 .buttons div:active {
@@ -1149,7 +1151,8 @@ i.loved {
 }
 
 #playing-list .song.fade-out {
-    opacity: 0.5;
+    opacity: 0.4;
+    transform: scale(0.98);
 }
 
 /* 封面图片切换动画 */
@@ -1171,7 +1174,20 @@ i.loved {
 }
 
 .song.playing {
-    animation: slideIn 0.3s ease forwards;
+    animation: smoothFadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes smoothFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.96);
+        filter: blur(2px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+        filter: blur(0);
+    }
 }
 
 /* 闪光效果增强 */
@@ -1715,19 +1731,23 @@ select:focus {
 
 /* 对话框动画 */
 @keyframes dialogShow {
-    from {
+    0% {
         opacity: 0;
-        transform: translate(-50%, -48%);
+        transform: translate(-50%, -54%);
+        box-shadow: 0 0px 0px rgba(0,0,0,0);
     }
-
-    to {
+    70% {
+        transform: translate(-50%, -49%);
+    }
+    100% {
         opacity: 1;
         transform: translate(-50%, -50%);
+        box-shadow: 0 16px 32px var(--rgba-11);
     }
 }
 
 .dialog:not(.hide) {
-    animation: dialogShow 0.2s ease-out forwards;
+    animation: dialogShow 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
 

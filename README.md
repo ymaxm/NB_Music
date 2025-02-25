@@ -60,9 +60,7 @@
 │   ├── icon.ico               # Windows 图标
 │   └── icon.png               # 通用图标
 ├── img/                        # 图片资源文件夹
-│   ├── bg-dark.svg            # 深色主题背景
-│   ├── bg.svg                 # 默认背景
-│   └── poster.jpeg            # 海报图片
+│   └── NB_Music.jpeg            # 海报图片
 ├── src/                       # 源代码目录
 │   ├── components/            # 组件文件夹
 │   │   ├── AudioPlayer.js     # 音频播放器核心组件

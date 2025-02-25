@@ -1,7 +1,7 @@
 {
     "name": "nb_music",
     "version": "0.2.8",
-    "description": "一款在线音乐播放器",
+    "description": "NB Music",
     "main": "src/main.js",
     "scripts": {
         "build": "electron-builder build",
@@ -35,9 +35,11 @@
         "@pixi/filter-color-matrix": "^7.4.2",
         "@pixi/sprite": "^7.4.2",
         "NeteaseCloudMusicApi": "^4.25.0",
+        "autoprefixer": "^10.4.20",
         "axios": "^1.7.9",
         "bootstrap-icons": "^1.11.3",
         "browser-id3-writer": "^6.2.0",
+        "cssnano": "^7.0.6",
         "electron-reload": "^2.0.0-alpha.1",
         "electron-store": "8.2.0",
         "electron-updater": "^6.3.9",
@@ -45,6 +47,7 @@
         "jss": "^10.10.0",
         "jss-preset-default": "^10.10.0",
         "md5": "^2.3.0",
+        "postcss": "^8.5.3",
         "puppeteer": "^24.0.0",
         "qrcode": "^1.5.4"
     },
