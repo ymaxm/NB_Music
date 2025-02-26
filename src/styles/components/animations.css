@@ -1,0 +1,186 @@
+/* 基础动画时长和缓动函数 */
+:root {
+  --animation-duration: 0.3s;
+  --animation-timing: cubic-bezier(0.4, 0, 0.2, 1);
+  --animation-timing-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --animation-timing-spring: cubic-bezier(0.68, -0.6, 0.32, 1.6);
+}
+
+/* 通用过渡效果 */
+.transition-all {
+  transition: all var(--animation-duration) var(--animation-timing);
+}
+
+/* 页面切换动画 */
+.content > div {
+  animation: fadeIn 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes fadeIn {
+  from {
+    transform: translateY(10px) scale(0.96);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* 播放状态动画 */
+@keyframes playingPulse {
+  0% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.6;
+  }
+}
+
+/* 闪光效果动画 */
+@keyframes flashRow {
+  0% {
+    background-color: transparent;
+  }
+  30% {
+    background-color: var(--rgba-15);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.flash {
+  animation: flashRow 0.8s ease-out;
+  position: relative;
+  overflow: hidden;
+}
+
+.flash::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg,
+          transparent,
+          var(--rgba-13),
+          transparent);
+  animation: flashSweep 0.8s ease-out;
+}
+
+@keyframes flashSweep {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* 进度条渐变动画 */
+@keyframes gradientMove {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* 边框渐变动画 */
+@keyframes borderGradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* 焦点动画 */
+@keyframes fcl {
+  0% {
+    transform: none;
+  }
+  50% {
+    transform: scaleY(0.5);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+/* 平滑淡入动画 */
+@keyframes smoothFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+
+/* 对话框动画 */
+@keyframes dialogShow {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -54%);
+    box-shadow: 0 0px 0px rgba(0,0,0,0);
+  }
+  70% {
+    transform: translate(-50%, -49%);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 16px 32px var(--rgba-11);
+  }
+}
+
+.dialog:not(.hide) {
+  animation: dialogShow 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* 通知滑入动画 */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* 旋转动画 */
+@keyframes clickRotate {
+  0% {
+    transform: rotate(0deg) scale(0.9);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+  }
+}
+
+@keyframes releaseRotate {
+  0% {
+    transform: rotate(0deg) scale(1.1);
+  }
+  100% {
+    transform: rotate(-360deg) scale(1);
+  }
+}

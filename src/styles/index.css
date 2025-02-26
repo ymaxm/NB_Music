@@ -1,0 +1,25 @@
+/* 导入变量 */
+@import './variables.css';
+
+/* 导入基础样式 */
+@import './base.css';
+
+/* 导入组件样式 */
+@import './components/titlebar.css';
+@import './components/sidebar.css';
+@import './components/player.css';
+@import './components/lyrics.css';
+@import './components/musiclist.css';
+@import './components/settings.css';
+@import './components/dialogs.css';
+@import './components/controls.css';
+@import './components/notifications.css';
+
+/* 导入动画 */
+@import './components/animations.css';
+
+/* 导入实用工具 */
+@import './utilities.css';
+
+/* 导入第三方库 */
+@import '../../node_modules/bootstrap-icons/font/bootstrap-icons.css';

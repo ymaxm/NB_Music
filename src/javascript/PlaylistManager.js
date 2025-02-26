@@ -278,6 +278,9 @@ class PlaylistManager {
                 .finally(() => {
                     if (this.currentPlayingBvid === song.bvid) {
                         this.isLoading = false;
+                        
+                        // 更新歌单中的播放位置
+                        this.savePlaylists();
                     }
                 });
 
@@ -480,21 +483,20 @@ class PlaylistManager {
         document.querySelector(".player .info .artist").textContent = song.artist;
 
         if (this.settingManager.getSetting("background") === "video") {
-            // 移除旧视频及其事件监听器
-            const oldVideos = document.querySelectorAll('video');
-            oldVideos.forEach(video => {
-                video.pause();
-                video.remove();
-            });
+            // 更严格地清理所有现有视频元素
+            this.cleanupVideoBackgrounds();
 
             try {
                 const video = document.createElement('video');
+                // 添加唯一ID，便于后续清理
+                video.id = 'background-video-' + Date.now();
                 video.style.position = 'absolute';
                 video.style.width = '100%';
                 video.style.height = '100%';
                 video.style.zIndex = '-1';
                 video.style.bottom = '0';
                 video.style.objectFit = 'cover';
+                video.style.opacity = '0'; // 初始透明度为0
                 video.muted = true;
                 video.playsInline = true;
 
@@ -503,13 +505,18 @@ class PlaylistManager {
                 video.addEventListener('loadedmetadata', () => {
                     // 视频元数据加载完成后立即开始播放
                     if (!this.audioPlayer.audio.paused) {
-                        video.play();
+                        video.play().catch(err => console.warn('视频自动播放失败:', err));
                     }
                 });
 
                 video.addEventListener('canplay', () => {
                     // 当有足够数据可以播放时同步进度
                     video.currentTime = this.audioPlayer.audio.currentTime;
+                    // 淡入显示视频
+                    setTimeout(() => {
+                        video.style.opacity = '1';
+                        video.style.transition = 'opacity 0.5s ease-in-out';
+                    }, 100);
                 });
 
                 // 添加视频源
@@ -534,41 +541,80 @@ class PlaylistManager {
             }
         }
     }
+    
+    // 新增方法：彻底清理所有视频背景
+    cleanupVideoBackgrounds() {
+        const oldVideos = document.querySelectorAll('body > video');
+        oldVideos.forEach(video => {
+            // 停止播放
+            video.pause();
+            
+            // 移除所有事件监听器
+            const videoClone = video.cloneNode(false);
+            
+            // 淡出效果
+            video.style.opacity = '0';
+            video.style.transition = 'opacity 0.2s ease-in-out';
+            
+            // 等待淡出完成后移除元素
+            setTimeout(() => {
+                if (video.parentNode) {
+                    video.parentNode.removeChild(video);
+                }
+            }, 200);
+            
+            // 替换为无事件监听器的克隆版本
+            if (video.parentNode) {
+                video.parentNode.replaceChild(videoClone, video);
+                
+                // 立即移除克隆版本
+                if (videoClone.parentNode) {
+                    videoClone.parentNode.removeChild(videoClone);
+                }
+            }
+        });
+    }
+    
     bindVideoEvents(video) {
         // 音频播放/暂停时同步控制视频
-        this.audioPlayer.audio.addEventListener('play', () => {
-            video.play();
-        });
-
-        this.audioPlayer.audio.addEventListener('pause', () => {
+        const handlePlay = () => {
+            video.play().catch(err => console.warn('视频播放失败:', err));
+        };
+        
+        const handlePause = () => {
             video.pause();
-        });
-
+        };
+        
         // 监听音频跳转事件,同步视频进度
-        this.audioPlayer.audio.addEventListener('seeking', () => {
+        const handleSeeking = () => {
             video.currentTime = this.audioPlayer.audio.currentTime;
-        });
-
+        };
+        
+        // 添加事件监听器，保存引用以便后续清理
+        this.audioPlayer.audio.addEventListener('play', handlePlay);
+        this.audioPlayer.audio.addEventListener('pause', handlePause);
+        this.audioPlayer.audio.addEventListener('seeking', handleSeeking);
+        
         // 监听视频错误
         video.addEventListener('error', () => {
             console.warn('视频播放出错,切换到封面背景');
-            video.remove();
+            this.cleanupVideoBackgrounds(); // 清理所有视频
             // 切换回封面背景
             const currentSong = this.playlist[this.playingNow];
             document.querySelector('html').style.setProperty('--bgul', `url(${currentSong.poster})`);
         });
-
-        // 优化性能
-        video.addEventListener('canplay', () => {
-            // 视频可以播放时再显示
-            video.style.opacity = '1';
-        });
-
+        
+        // 当视频元素被移除时，自动清理事件监听器
+        video.addEventListener('remove', () => {
+            this.audioPlayer.audio.removeEventListener('play', handlePlay);
+            this.audioPlayer.audio.removeEventListener('pause', handlePause);
+            this.audioPlayer.audio.removeEventListener('seeking', handleSeeking);
+        }, { once: true });
+        
         // 初始状态
-        video.style.opacity = '0';
         if (!this.audioPlayer.audio.paused) {
             // 如果音频正在播放,则自动开始视频
-            video.play();
+            video.play().catch(err => console.warn('视频自动播放失败:', err));
         }
     }
     changePlaylistName(name) {
@@ -584,18 +630,36 @@ class PlaylistManager {
 
     savePlaylists() {
         try {
-            this.musiclistManager.savePlaylists();
+            // 如果有 musiclistManager，则由它来保存歌单状态
+            if (this.musiclistManager) {
+                this.musiclistManager.savePlaylists();
+            }
+            
+            // 保存基本播放列表信息
             localStorage.setItem("nbmusic_playlist", JSON.stringify(this.playlist));
             localStorage.setItem("nbmusic_playlistname", this.playlistName);
             localStorage.setItem("nbmusic_url_expiry", JSON.stringify(Array.from(this.urlExpiryTimes.entries())));
-            // 新增：存储当前歌单ID
+            
+            // 保存当前歌单ID
             if (this.currentPlaylistId) {
                 localStorage.setItem("nbmusic_current_playlist_id", this.currentPlaylistId);
             }
+            
+            // 保存当前播放进度信息
             if (this.audioPlayer && !isNaN(this.audioPlayer.audio.currentTime)) {
                 localStorage.setItem("nbmusic_current_time", this.audioPlayer.audio.currentTime);
             }
             localStorage.setItem("nbmusic_playing_now", this.playingNow);
+            
+            // 同步更新 musiclistManager 中的对应歌单
+            if (this.musiclistManager && this.currentPlaylistId) {
+                const playlistIndex = this.musiclistManager.playlists.findIndex(p => p.id === this.currentPlaylistId);
+                if (playlistIndex !== -1) {
+                    const playlist = this.musiclistManager.playlists[playlistIndex];
+                    playlist.lastPlayedIndex = this.playingNow;
+                    playlist.lastPlayedTime = this.audioPlayer?.audio?.currentTime || 0;
+                }
+            }
         } catch (error) {
             console.error("保存播放列表失败:", error);
         }

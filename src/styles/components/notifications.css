@@ -1,0 +1,118 @@
+/* 通知容器 */
+.notification-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* 通知样式 */
+.notification {
+  background: var(--bg-2);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-1);
+  border-radius: 8px;
+  padding: 12px 20px;
+  min-width: 280px;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  animation: slideIn 0.3s ease;
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-content: center;
+  align-items: center;
+}
+
+/* 不同类型的通知样式 */
+.notification.info {
+  border-left: 4px solid var(--theme-1);
+}
+
+.notification.success {
+  border-left: 4px solid var(--success);
+}
+
+.notification.warning {
+  border-left: 4px solid var(--warning);
+}
+
+.notification.error {
+  border-left: 4px solid var(--error);
+}
+
+/* 消息文本样式 */
+.notification-message {
+  color: var(--text);
+}
+
+/* 进度条容器 */
+.notification-progress {
+  bottom: 0;
+  left: 0;
+  width: 80%;
+  height: 4px;
+  background: var(--border-1);
+  border-radius: 0 0 8px 8px;
+  margin-bottom: 6px;
+  overflow: hidden;
+}
+
+/* 进度条 */
+.notification-progress-inner {
+  height: 100%;
+  background: linear-gradient(90deg, var(--theme-1), var(--theme-2));
+  width: 0;
+  transition: width 0.3s ease;
+  border-radius: 2px;
+  animation: gradientMove 2s linear infinite;
+}
+
+/* 淡出动画 */
+.notification.fade-out {
+  opacity: 0;
+  transform: translateX(100%);
+  transition: all 0.3s ease;
+}
+
+/* 搜索建议容器 */
+.suggestions {
+  position: absolute;
+  top: 70px;
+  left: 50%;
+  width: 60%;
+  transform: translateX(-50%) translateY(-10px);
+  background: var(--mica);
+  border-radius: 8px;
+  margin-top: 4px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-1);
+  overflow: hidden;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 8px 32px var(--bg-1);
+}
+
+.suggestions.active {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+.suggestion-item {
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.suggestion-item:hover,
+.selected {
+  background: var(--rgba-16);
+}

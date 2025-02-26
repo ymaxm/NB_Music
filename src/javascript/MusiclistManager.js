@@ -36,6 +36,16 @@ class MusiclistManager {
         const savedPlaylists = localStorage.getItem("nbmusic_playlists");
         if (savedPlaylists) {
             this.playlists = JSON.parse(savedPlaylists);
+            
+            // 确保每个歌单有播放状态属性
+            this.playlists.forEach(playlist => {
+                if (playlist.lastPlayedIndex === undefined) {
+                    playlist.lastPlayedIndex = 0;
+                }
+                if (playlist.lastPlayedTime === undefined) {
+                    playlist.lastPlayedTime = 0;
+                }
+            });
         }
     
         // 如果没有歌单，创建默认空歌单
@@ -43,7 +53,9 @@ class MusiclistManager {
             this.playlists = [{
                 id: this.generateUUID(),
                 name: "默认歌单",
-                songs: []
+                songs: [],
+                lastPlayedIndex: 0,
+                lastPlayedTime: 0
             }];
             this.savePlaylists();
             
@@ -55,7 +67,7 @@ class MusiclistManager {
         // 2. 加载上次播放状态
         const lastPlayed = localStorage.getItem("nbmusic_current_playlist");
         if (lastPlayed) {
-            const { playlistId, songIndex, currentTime } = JSON.parse(lastPlayed);
+            const { playlistId } = JSON.parse(lastPlayed);
 
             // 找到对应的歌单
             const playlistIndex = this.playlists.findIndex(p => p.id === playlistId);
@@ -69,13 +81,18 @@ class MusiclistManager {
                     this.playlistManager.playlist = [...playlist.songs];
                     this.playlistManager.playlistName = playlist.name;
                     this.playlistManager.currentPlaylistId = playlist.id;
-                    this.playlistManager.playingNow = songIndex;
-                    this.playlistManager.currentTime = currentTime || 0;
-
+                    
                     // 设置播放进度
-                    if (songIndex >= 0 && songIndex < playlist.songs.length) {
-                        this.playlistManager.playingNow = songIndex;
-                        this.playlistManager.currentTime = currentTime || 0;
+                    if (playlist.songs.length > 0) {
+                        // 使用歌单自己保存的上次播放位置
+                        this.playlistManager.playingNow = Math.min(
+                            playlist.lastPlayedIndex || 0,
+                            playlist.songs.length - 1
+                        );
+                        this.playlistManager.currentTime = playlist.lastPlayedTime || 0;
+                    } else {
+                        this.playlistManager.playingNow = 0;
+                        this.playlistManager.currentTime = 0;
                     }
                 }
             }
@@ -83,8 +100,17 @@ class MusiclistManager {
 
         // 3. 更新 UI
         this.uiManager.renderPlaylist();
-        this.playlistManager.setPlayingNow(this.playlistManager.playingNow);
-        this.audioPlayer.currentTime = this.playlistManager.currentTime;
+        
+        // 设置播放但不自动播放
+        if (this.playlistManager.playlist.length > 0) {
+            this.playlistManager.setPlayingNow(this.playlistManager.playingNow, false);
+            if (this.playlistManager.audioPlayer && this.playlistManager.currentTime > 0) {
+                setTimeout(() => {
+                    this.playlistManager.audioPlayer.audio.currentTime = this.playlistManager.currentTime;
+                }, 500);
+            }
+        }
+        
         this.renderPlaylistList();
         this.renderSongList();
     }
@@ -224,9 +250,20 @@ class MusiclistManager {
     savePlaylists() {
         try {
             if (this.playlists.length === 1 && this.playlists[0].name === "默认歌单" && this.playlists[0].songs.length === 0) {
-                return ;
+                return;
             }
+            
+            // 在保存前更新当前活跃歌单的播放位置
+            if (this.activePlaylistIndex >= 0 && this.activePlaylistIndex < this.playlists.length) {
+                const activePlaylist = this.playlists[this.activePlaylistIndex];
+                if (activePlaylist && this.playlistManager) {
+                    activePlaylist.lastPlayedIndex = this.playlistManager.playingNow;
+                    activePlaylist.lastPlayedTime = this.playlistManager.audioPlayer?.audio?.currentTime || 0;
+                }
+            }
+            
             localStorage.setItem("nbmusic_playlists", JSON.stringify(this.playlists));
+            
             // 保存当前播放的歌单ID和歌曲索引
             localStorage.setItem("nbmusic_current_playlist", JSON.stringify({
                 playlistId: this.playlistManager.currentPlaylistId,
@@ -280,15 +317,62 @@ class MusiclistManager {
             li.appendChild(buttonContainer);
 
             li.addEventListener("click", () => {
+                // 保存当前歌单播放状态
+                if (this.activePlaylistIndex >= 0 && this.activePlaylistIndex < this.playlists.length) {
+                    const currentPlaylist = this.playlists[this.activePlaylistIndex];
+                    if (currentPlaylist && this.playlistManager) {
+                        currentPlaylist.lastPlayedIndex = this.playlistManager.playingNow;
+                        currentPlaylist.lastPlayedTime = this.playlistManager.audioPlayer?.audio?.currentTime || 0;
+                    }
+                }
+                
+                // 切换到新歌单
                 this.activePlaylistIndex = index;
-                this.playlistManager.playlistName = playlist.name;
-                this.playlistManager.playlist = [...playlist.songs];
-                this.playlistManager.currentPlaylistId = playlist.id;
+                const targetPlaylist = this.playlists[index];
+                
+                // 更新播放器状态
+                this.playlistManager.playlistName = targetPlaylist.name;
+                this.playlistManager.playlist = [...targetPlaylist.songs];
+                this.playlistManager.currentPlaylistId = targetPlaylist.id;
+                
+                // 恢复目标歌单的播放位置
+                const songIndex = Math.min(
+                    targetPlaylist.lastPlayedIndex || 0, 
+                    targetPlaylist.songs.length - 1
+                );
+                
+                // 先保存歌单状态
                 this.playlistManager.savePlaylists();
+                
+                // 先更新UI
                 this.playlistManager.uiManager.renderPlaylist();
-                this.playlistManager.setPlayingNow(0);
                 this.renderPlaylistList();
                 this.renderSongList();
+                
+                // 然后恢复播放状态
+                if (targetPlaylist.songs.length > 0) {
+                    const shouldPlay = !this.playlistManager.audioPlayer.audio.paused;
+                    this.playlistManager.setPlayingNow(songIndex, false);
+                    
+                    // 恢复播放进度
+                    if (targetPlaylist.lastPlayedTime > 0) {
+                        setTimeout(() => {
+                            this.playlistManager.audioPlayer.audio.currentTime = targetPlaylist.lastPlayedTime;
+                            
+                            // 如果当前正在播放，则自动播放新歌单
+                            if (shouldPlay) {
+                                this.playlistManager.audioPlayer.audio.play()
+                                    .catch(err => console.warn('自动播放失败:', err));
+                            }
+                        }, 500);
+                    } else if (shouldPlay) {
+                        // 如果当前正在播放，且没有进度，直接播放
+                        setTimeout(() => {
+                            this.playlistManager.audioPlayer.audio.play()
+                                .catch(err => console.warn('自动播放失败:', err));
+                        }, 500);
+                    }
+                }
             });
 
             this.playlistSection.appendChild(li);
@@ -412,6 +496,13 @@ class MusiclistManager {
         if (deleteBtn.classList.contains('confirm-delete')) {
             // 如果删除的是当前播放的歌单
             if (index === this.activePlaylistIndex) {
+                // 保存当前播放状态到歌单
+                const activePlaylist = this.playlists[index];
+                if (this.playlistManager) {
+                    activePlaylist.lastPlayedIndex = this.playlistManager.playingNow;
+                    activePlaylist.lastPlayedTime = this.playlistManager.audioPlayer?.audio?.currentTime || 0;
+                }
+                
                 // 获取前一个歌单或后一个歌单的索引
                 let newIndex;
                 if (index > 0) {

@@ -1,25 +1,25 @@
 "use strict";
 
-const AudioPlayer = require("./components/AudioPlayer.js");
-const LyricsPlayer = require("./components/LyricsPlayer.js");
-const UIManager = require("./components/UIManager.js");
-const PlaylistManager = require("./components/PlaylistManager.js");
-const FavoriteManager = require("./components/FavoriteManager.js");
-const MusicSearcher = require("./components/MusicSearcher.js");
-const SettingManager = require("./components/SettingManager.js");
-const MusiclistManager = require("./components/MusiclistManager.js");
-const CacheManager = require("./components/CacheManager.js");
-const LoginManager = require("./components/LoginManager.js");
-const UpdateManager = require("./components/UpdateManager.js");
+const AudioPlayer = require("./javascript/AudioPlayer.js");
+const LyricsPlayer = require("./javascript/LyricsPlayer.js");
+const UIManager = require("./javascript/UIManager.js");
+const PlaylistManager = require("./javascript/PlaylistManager.js");
+const FavoriteManager = require("./javascript/FavoriteManager.js");
+const MusicSearcher = require("./javascript/MusicSearcher.js");
+const SettingManager = require("./javascript/SettingManager.js");
+const MusiclistManager = require("./javascript/MusiclistManager.js");
+const CacheManager = require("./javascript/CacheManager.js");
+const LoginManager = require("./javascript/LoginManager.js");
+const UpdateManager = require("./javascript/UpdateManager.js");
 
 class App {
     constructor() {
-        this.initializeComponents();
+        this.initializecomponents();
         this.loadSavedData();
         this.setupInitialUI();
     }
 
-    initializeComponents() {
+    initializecomponents() {
         try {
             // 1. 创建基础组件
             this.settingManager = new SettingManager();

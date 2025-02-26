@@ -1,0 +1,147 @@
+/* 设置页面样式 */
+.setting {
+  padding: 24px;
+}
+
+.setting .title {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 24px;
+}
+
+/* 设置内容布局 */
+.setting-content {
+  display: grid;
+  gap: 20px;
+}
+
+/* 设置项样式 */
+.setting-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border-radius: 8px;
+  backdrop-filter: blur(20px);
+  transition: background-color 0.3s ease;
+  border: 1px solid var(--border-1);
+}
+
+.setting-item:hover {
+  background: var(--rgba-16);
+}
+
+/* 设置信息区域 */
+.setting-info {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.setting-info > i {
+  font-size: 24px;
+  color: var(--rgba-6);
+  margin: 12px;
+  background: linear-gradient(100deg, var(--theme-1), var(--theme-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: saturate(130%) brightness(1.1);
+}
+
+/* 设置文字区域 */
+.words > .setting-name {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.words > .setting-descrition {
+  font-size: 14px;
+  color: var(--rgba-6);
+}
+
+/* 设置值区域 */
+.setting-value {
+  display: flex;
+}
+
+/* 导航组件样式 */
+nav {
+  border-radius: 1.25rem;
+  background-color: #111;
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  color: #eee;
+  justify-content: center;
+  flex-wrap: wrap;
+  position: relative;
+}
+
+nav a {
+  padding: 0.5rem 1rem;
+  position: relative;
+  color: white;
+  isolation: isolate;
+  text-decoration: none;
+  view-transition-name: none !important;
+}
+
+nav a::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(to right, #6a11cb 0%, #2575fc 100%);
+  z-index: -1;
+  border-radius: 0.75rem;
+  scale: 0;
+  transition: scale 0.3s var(--bounce);
+  view-transition-name: none !important;
+}
+
+nav a.active::before {
+  scale: 1;
+  view-transition-name: var(--vt-active);
+}
+
+/* 浅色主题下的 nav 样式 */
+:root.light nav {
+  background-color: var(--rgba-4);
+  border: 1px solid var(--border-1);
+}
+
+:root.light nav a {
+  color: var(--text);
+}
+
+:root.light nav a::before {
+  background-image: linear-gradient(to right, var(--theme-1), var(--theme-2));
+  opacity: 0.8;
+}
+
+:root.light nav a:hover {
+  color: var(--text);
+  background-color: var(--hover-half);
+}
+
+:root.light nav a.active {
+  color: #fff;
+}
+
+/* 缓存清理按钮样式 */
+.cache-clear-btn {
+  padding: 6px 12px;
+  border: 1px solid var(--border-1);
+  background: var(--color-14);
+  color: var(--text);
+  border-radius: 1.25rem;
+  cursor: pointer;
+  margin-left: 12px;
+  transition: background 0.2s ease;
+}
+
+.cache-clear-btn:hover {
+  background: var(--bg);
+}
