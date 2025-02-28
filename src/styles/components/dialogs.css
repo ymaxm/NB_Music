@@ -59,6 +59,10 @@
   margin-bottom: 0;
 }
 
+.input-group input,select{
+  width: 100%;
+}
+
 /* 输入标签 */
 label {
   display: block;
@@ -67,33 +71,6 @@ label {
   font-size: 14px;
 }
 
-/* 输入框和选择框 */
-input[type="text"],
-select {
-  width: 100%;
-  padding: 8px 12px;
-  border-radius: 8px;
-  background: var(--bg50);
-  border: 1px solid var(--border-1);
-  backdrop-filter: blur(20px);
-  color: var(--text);
-  font-size: 14px;
-  transition: all 0.2s ease;
-}
-
-input[type="text"]:hover,
-select:hover {
-  backdrop-filter: blur(20px);
-  background: var(--bg70);
-}
-
-input[type="text"]:focus,
-select:focus {
-  outline: none;
-  border-color: var(--theme-1);
-  background: var(--bg);
-  box-shadow: 0 0 0 2px var(--theme-2);
-}
 
 /* 当前歌曲标题显示 */
 #currentSongTitle {

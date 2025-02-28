@@ -144,6 +144,92 @@
   }
 }
 
+/* 拖动排序相关样式 */
+.song.draggable {
+  user-select: none;
+  cursor: grab;
+}
+
+.song.draggable::before {
+  content: '≡';
+  position: absolute;
+  left: -18px;
+  color: var(--rgba-6);
+  font-size: 16px;
+  opacity: 0;
+  transition: opacity 0.2s cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.song.draggable:hover::before {
+  opacity: 0.7;
+}
+
+.song.dragging {
+  cursor: grabbing;
+  z-index: 100;
+  animation: dragStart 0.3s forwards cubic-bezier(0.34, 1.56, 0.64, 1);
+  background-color: var(--rgba-16);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15), 0 5px 15px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px) saturate(1.5);
+  -webkit-backdrop-filter: blur(10px) saturate(1.5);
+}
+
+@keyframes dragStart {
+  0% {
+    transform: scale(1) translateZ(0);
+  }
+  50% {
+    transform: scale(1.02) translateZ(0);
+  }
+  100% {
+    transform: scale(1.01) translateZ(0);
+  }
+}
+
+.drag-placeholder {
+  background-color: var(--rgba-17);
+  border: 2px dashed var(--rgba-13);
+  border-radius: 8px;
+  height: 64px;
+  margin: 4px 0;
+  animation: placeholderPulse 1.5s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes placeholderPulse {
+  from {
+    opacity: 0.7;
+    transform: scale(0.99);
+  }
+  to {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+}
+
+.song-drop-indicator {
+  height: 3px;
+  background: linear-gradient(90deg, var(--theme-1), var(--theme-2));
+  border-radius: 3px;
+  margin: 0;
+  transform: scaleX(0);
+  transition: transform 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.song-drop-indicator.active {
+  transform: scaleX(1);
+}
+
+/* 苹果风格的拖动反馈 */
+.song-drag-feedback {
+  position: fixed;
+  pointer-events: none;
+  z-index: 1000;
+  width: max-content;
+  transform-origin: left center;
+  transition: transform 0.1s cubic-bezier(0.19, 1, 0.22, 1);
+  filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.2));
+}
+
 /* 闪光效果 */
 .flash {
   animation: flashRow 0.8s ease-out;
@@ -184,6 +270,20 @@
   100% {
     left: 100%;
   }
+}
+
+/* 拖拽后重新排序动画 */
+@keyframes reorderComplete {
+  0% {
+    background-color: var(--rgba-15);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.reorder-complete {
+  animation: reorderComplete 0.8s cubic-bezier(0.19, 1, 0.22, 1);
 }
 
 /* 歌曲列表项样式 */

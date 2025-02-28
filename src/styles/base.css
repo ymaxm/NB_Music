@@ -200,29 +200,44 @@ body {
 /* 通用表单元素样式 */
 input[type="text"],
 select {
-  width: 100%;
+  background-color: var(--bg50);
+  border: none;
+  border-bottom: 2.5px solid;
+  border-bottom-color: #7f7f7f7f;
+  border-radius: 7px;
   padding: 8px 12px;
-  border-radius: 8px;
-  background: var(--bg50);
-  border: 1px solid var(--border-1);
-  backdrop-filter: blur(20px);
+  outline: medium;
   color: var(--text);
-  font-size: 14px;
-  transition: all 0.2s ease;
+  transition: 100ms, border 0s;
+  box-shadow: 0 1px 2px var(--s3d);
 }
 
 input[type="text"]:hover,
 select:hover {
-  backdrop-filter: blur(20px);
-  background: var(--bg70);
+  background: var(--cm);
 }
 
 input[type="text"]:focus,
 select:focus {
+  background-color: var(--bg);
+  background-clip: padding-box, border-box;
+  background-origin: padding-box, border-box;
+  background-image: linear-gradient(var(--bg), var(--bg)), linear-gradient(90deg, var(--theme-1), var(--theme-2));
+  border-bottom-color: transparent;
+  box-shadow: 0 1px 10px var(--s3d);
+  opacity: 1;
+}
+
+input.foc {
+  display: block;
+  height: 0;
+  width: 0;
+  opacity: 0;
+  padding: 0;
+  margin: 0;
+  border: none;
   outline: none;
-  border-color: var(--theme-1);
-  background: var(--bg);
-  box-shadow: 0 0 0 2px var(--theme-2);
+  background: none;
 }
 
 select option {
