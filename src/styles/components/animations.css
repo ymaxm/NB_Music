@@ -12,7 +12,7 @@
 }
 
 /* 页面切换动画 */
-.content > div {
+.content>div {
   animation: fadeIn 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -20,6 +20,7 @@
   from {
     transform: translateY(10px) scale(0.96);
   }
+
   to {
     transform: translateY(0);
   }
@@ -30,9 +31,11 @@
   0% {
     opacity: 0.6;
   }
+
   50% {
     opacity: 1;
   }
+
   100% {
     opacity: 0.6;
   }
@@ -43,9 +46,11 @@
   0% {
     background-color: transparent;
   }
+
   30% {
     background-color: var(--rgba-15);
   }
+
   100% {
     background-color: transparent;
   }
@@ -65,9 +70,9 @@
   width: 100%;
   height: 100%;
   background: linear-gradient(90deg,
-          transparent,
-          var(--rgba-13),
-          transparent);
+      transparent,
+      var(--rgba-13),
+      transparent);
   animation: flashSweep 0.8s ease-out;
 }
 
@@ -75,6 +80,7 @@
   0% {
     left: -100%;
   }
+
   100% {
     left: 100%;
   }
@@ -85,9 +91,11 @@
   0% {
     background-position: 0% 50%;
   }
+
   50% {
     background-position: 100% 50%;
   }
+
   100% {
     background-position: 0% 50%;
   }
@@ -98,9 +106,11 @@
   0% {
     background-position: 0% 50%;
   }
+
   50% {
     background-position: 100% 50%;
   }
+
   100% {
     background-position: 0% 50%;
   }
@@ -111,9 +121,11 @@
   0% {
     transform: none;
   }
+
   50% {
     transform: scaleY(0.5);
   }
+
   100% {
     transform: none;
   }
@@ -126,6 +138,7 @@
     transform: scale(0.96);
     filter: blur(2px);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -138,11 +151,13 @@
   0% {
     opacity: 0;
     transform: translate(-50%, -54%);
-    box-shadow: 0 0px 0px rgba(0,0,0,0);
+    box-shadow: 0 0px 0px rgba(0, 0, 0, 0);
   }
+
   70% {
     transform: translate(-50%, -49%);
   }
+
   100% {
     opacity: 1;
     transform: translate(-50%, -50%);
@@ -160,6 +175,7 @@
     opacity: 0;
     transform: translateX(100%);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -171,6 +187,7 @@
   0% {
     transform: rotate(0deg) scale(0.9);
   }
+
   100% {
     transform: rotate(360deg) scale(1);
   }
@@ -180,7 +197,48 @@
   0% {
     transform: rotate(0deg) scale(1.1);
   }
+
   100% {
     transform: rotate(-360deg) scale(1);
   }
 }
+
+/* 波纹效果 */
+.ripple-effect {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(0);
+  animation: ripple 0.6s ease-out;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes ripple {
+  to {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+/* 为导航选项卡添加更平滑的过渡 */
+@keyframes slide-in {
+  0% {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+nav a {
+  animation: slide-in 0.3s ease-out backwards;
+}
+
+nav a:nth-child(1) { animation-delay: 0.05s; }
+nav a:nth-child(2) { animation-delay: 0.1s; }
+nav a:nth-child(3) { animation-delay: 0.15s; }
+nav a:nth-child(4) { animation-delay: 0.2s; }
+nav a:nth-child(5) { animation-delay: 0.25s; }

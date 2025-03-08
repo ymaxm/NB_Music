@@ -1,5 +1,5 @@
 "use strict";
-
+const { ipcRenderer } = require("electron");
 const AudioPlayer = require("./javascript/AudioPlayer.js");
 const LyricsPlayer = require("./javascript/LyricsPlayer.js");
 const UIManager = require("./javascript/UIManager.js");
@@ -17,6 +17,8 @@ class App {
         this.initializecomponents();
         this.loadSavedData();
         this.setupInitialUI();
+        this.checkFirstUse();
+        this.setupCommandLineHandlers();
     }
 
     initializecomponents() {
@@ -67,8 +69,44 @@ class App {
     
             // 5. 暴露全局引用
             window.app = this;
+            
+            // 初始化完成后建立组件间依赖关系
+            this.setupDependencies();
         } catch (error) {
             console.error("组件初始化失败:", error);
+        }
+    }
+
+    setupDependencies() {
+        // 确保SettingManager能访问PlaylistManager
+        if (this.settingManager && this.playlistManager) {
+            this.settingManager.playlistManager = this.playlistManager;
+        }
+        
+        // 确保MusicSearcher能获取设置信息
+        if (this.musicSearcher && this.settingManager) {
+            this.musicSearcher.setDependencies(this.settingManager);
+        }
+        
+        // 可能需要添加其他组件间的依赖
+        // ...
+    }
+
+    checkFirstUse() {
+        // 检查是否是首次使用
+        const hasUsedBefore = localStorage.getItem("nbmusic_first_use_seen");
+        
+        if (!hasUsedBefore) {
+            this.showWelcomeDialog();
+            
+            // 添加同意按钮的事件监听
+            const agreeButton = document.getElementById("agreeTerms");
+            if (agreeButton) {
+                agreeButton.addEventListener("click", () => {
+                    // 标记已经看过首次使用对话框
+                    localStorage.setItem("nbmusic_first_use_seen", "true");
+                });
+            }
         }
     }
 
@@ -88,6 +126,8 @@ class App {
         } catch (error) {
             console.error("加载保存的数据失败:", error);
         }
+
+        this.checkFirstUse();
     }
 
     setupInitialUI() {
@@ -118,12 +158,45 @@ class App {
             console.error("初始UI设置失败:", error);
         }
     }
+    setupCommandLineHandlers() {
+        // 监听主进程传来的命令行参数
+        ipcRenderer.on('command-line-args', (_, args) => {
+            if (args.showWelcome) {
+                this.showWelcomeDialog();
+            }
+        });
+    }
+    showWelcomeDialog() {
+        const firstUseDialog = document.getElementById("firstUseDialog");
+        if (firstUseDialog) {
+            firstUseDialog.classList.remove("hide");
+            
+            // 添加同意按钮的事件监听
+            const agreeButton = document.getElementById("agreeTerms");
+            if (agreeButton) {
+                // 移除可能存在的旧事件监听器
+                const newAgreeButton = agreeButton.cloneNode(true);
+                agreeButton.parentNode.replaceChild(newAgreeButton, agreeButton);
+                
+                newAgreeButton.addEventListener("click", () => {
+                    // 隐藏对话框
+                    firstUseDialog.classList.add("hide");
+                });
+            }
+        }
+    }
 }
 
 // 当DOM加载完成后初始化应用
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
     try {
         new App();
+        // 初始化更新管理器
+        const updateManager = new UpdateManager();
+        
+        // 将管理器添加到全局应用对象
+        if (!window.app) window.app = {};
+        window.app.updateManager = updateManager;
     } catch (error) {
         console.error("应用初始化失败:", error);
     }

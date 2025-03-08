@@ -78,8 +78,6 @@
 ├──  package.json                 # 项目依赖管理
 ├──  public/                      # 公共资源文件夹
 ├──  src/                         # 源代码文件夹
-│   ├──  css/                     # 样式文件
-│   │   ├──  style.css            # 主要样式文件
 │   ├──  javascript/              # JavaScript文件
 │   │   ├──  AudioPlayer.js       # 音频播放器功能
 │   │   ├──  CacheManager.js      # 缓存管理器

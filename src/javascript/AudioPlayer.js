@@ -7,21 +7,37 @@ class AudioPlayer {
         this.audio.loop = false;
         this.audio.volume = 1;
         this.volumeInterval = null;
+        this.settingManager = null; // 将在初始化时设置
+        this.lastProgressSaveTime = 0;
+        
         this.audio.addEventListener("timeupdate", () => {
-            // 每30秒保存一次进度
-            if (Math.floor(this.audio.currentTime) % 30 === 0) {
+            // 增加保存频率：每10秒保存一次进度
+            const now = Date.now();
+            if ((now - this.lastProgressSaveTime) > 10000) {
                 this.playlistManager.savePlaylists();
+                this.lastProgressSaveTime = now;
             }
         });
 
         // 在暂停时保存进度
         this.audio.addEventListener("pause", () => {
             this.playlistManager.savePlaylists();
+            this.lastProgressSaveTime = Date.now();
         });
+        
+        // 在播放结束时保存进度
         this.audio.addEventListener('ended', () => {
+            this.playlistManager.savePlaylists();
+            this.lastProgressSaveTime = Date.now();
+            
             if (this.playlistManager) {
                 this.playlistManager.next();
             }
+        });
+        
+        // 在离开页面前保存进度
+        window.addEventListener('beforeunload', () => {
+            this.playlistManager.savePlaylists();
         });
 
         if ("mediaSession" in navigator) {
@@ -53,12 +69,24 @@ class AudioPlayer {
     }
 
     async audioPlay() {
+        // 检查是否启用了淡入淡出效果
+        const fadeEnabled = this.settingManager && 
+            this.settingManager.getSetting('fadeEnabled') === 'true';
+
         // 清除现有间隔
         if (this.volumeInterval) {
             clearInterval(this.volumeInterval);
             this.volumeInterval = null;
         }
 
+        // 如果禁用了淡入淡出效果，直接设置音量为1并播放
+        if (!fadeEnabled) {
+            this.audio.volume = 1;
+            await this.audio.play();
+            return;
+        }
+
+        // 启用淡入淡出时的逻辑
         await this.audio.play();
         this.volumeInterval = window.setInterval(() => {
             this.audio.volume += 0.01;
@@ -71,12 +99,23 @@ class AudioPlayer {
     }
 
     audioPause() {
+        // 检查是否启用了淡入淡出效果
+        const fadeEnabled = this.settingManager && 
+            this.settingManager.getSetting('fadeEnabled') === 'true';
+
         // 清除现有间隔
         if (this.volumeInterval) {
             clearInterval(this.volumeInterval);
             this.volumeInterval = null;
         }
 
+        // 如果禁用了淡入淡出效果，直接暂停
+        if (!fadeEnabled) {
+            this.audio.pause();
+            return;
+        }
+
+        // 启用淡入淡出时的逻辑
         this.volumeInterval = window.setInterval(() => {
             this.audio.volume -= 0.01;
             if (this.audio.volume <= 0.02) {
@@ -155,6 +194,11 @@ class AudioPlayer {
         }
         
         this.playlistManager.setPlayingNow(nextIndex);
+    }
+
+    // 设置 settingManager 的方法
+    setSettingManager(settingManager) {
+        this.settingManager = settingManager;
     }
 }
 

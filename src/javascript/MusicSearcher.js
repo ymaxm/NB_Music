@@ -6,7 +6,14 @@ const { lyric_new, search } = require("NeteaseCloudMusicApi");
 class MusicSearcher {
     constructor() {
         this.COOKIE = "";
+        this.settingManager = null; // 将由外部设置
     }
+
+    // 新增：设置依赖
+    setDependencies(settingManager) {
+        this.settingManager = settingManager;
+    }
+
     async searchBilibiliVideo(keyword, page = 1, order = "totalrank", duration = 0, tids = 0) {
         const mixinKeyEncTab = [46, 47, 18, 2, 53, 8, 23, 32, 15, 50, 10, 31, 58, 3, 45, 35, 27, 43, 5, 49, 33, 9, 42, 19, 29, 28, 14, 39, 12, 38, 41, 13, 37, 48, 7, 16, 24, 55, 40, 61, 26, 17, 0, 1, 60, 51, 30, 4, 22, 25, 54, 21, 56, 59, 6, 63, 57, 62, 11, 36, 20, 34, 44, 52];
 
@@ -189,10 +196,13 @@ class MusicSearcher {
 
             // 渲染搜索结果
             searchResults.forEach((song) => {
+                // 确保获取作者信息
+                const authorName = song.author || "未知艺术家";
+                
                 const div = this.uiManager.createSongElement(
                     {
                         title: song.title.replace(/<em class="keyword">|<\/em>/g, ""),
-                        artist: song.artist,
+                        artist: authorName,
                         poster: "https:" + song.pic
                     },
                     song.bvid,
@@ -222,10 +232,10 @@ class MusicSearcher {
                         // 先切换到播放器界面
                         document.querySelector("#function-list .player").click();
 
-                        // 预先设置基本信息
+                        // 预先设置基本信息，确保包含作者信息
                         const songInfo = {
                             title: cleanTitle,
-                            artist: song.artist,
+                            artist: authorName,
                             poster: "https:" + song.pic,
                             bvid: song.bvid,
                             lyric: "等待获取歌词",
@@ -370,8 +380,28 @@ class MusicSearcher {
     }
     async getBilibiliVideoUrl(bvid, cid) {
         try {
-            const response = await fetch(`https://api.bilibili.com/x/player/playurl?bvid=${bvid}&cid=${cid}&qn=0&fnval=80&fnver=0&fourk=1`, {
+            // 获取用户设置的视频清晰度，默认为720P
+            let quality = 64; // 默认720P
+            
+            if (this.settingManager) {
+                quality = this.settingManager.getSetting('videoQuality') || 64;
+            }
+            
+            // 根据清晰度判断是否启用4K和其他高级功能
+            const fourk = quality >= 120 ? 1 : 0;
+            
+            // 设置fnval，根据需要的功能组合不同的值
+            let fnval = 16; // 基本DASH格式
+            if (quality === 125) {
+                fnval |= 64; // 需要HDR视频
+            } else if (quality === 126) {
+                fnval |= 512; // 需要杜比视界
+            } else if (quality === 127) {
+                fnval |= 1024; // 需要8K分辨率
+            }
 
+            const response = await fetch(`https://api.bilibili.com/x/player/playurl?bvid=${bvid}&cid=${cid}&qn=${quality}&fnval=${fnval}&fnver=0&fourk=${fourk}`, {
+                // 继续使用现有的请求配置
             });
 
             if (!response.ok) {
@@ -384,13 +414,41 @@ class MusicSearcher {
                 throw new Error(data.message);
             }
 
-            // 返回第一个可用的视频URL
-            return data.data.dash.video[0].baseUrl;
+            // 解析并选择最佳视频流
+            const dashData = data.data.dash;
+            if (dashData && dashData.video && dashData.video.length > 0) {
+                // 根据清晰度选择最佳视频流
+                return this.selectBestVideoStream(dashData.video, quality);
+            } else {
+                // 如果没有DASH格式，尝试使用durl（旧格式）
+                if (data.data.durl && data.data.durl.length > 0) {
+                    return data.data.durl[0].url;
+                }
+                throw new Error('无可用视频流');
+            }
         } catch (error) {
             console.error('获取B站视频URL失败:', error);
             return null;
         }
     }
+
+    // 新增：选择最佳视频流
+    selectBestVideoStream(videoStreams, preferredQuality) {
+        // 首先按质量(id)降序排序
+        videoStreams.sort((a, b) => b.id - a.id);
+        
+        // 找出不超过用户设置清晰度的最高质量流
+        for (let stream of videoStreams) {
+            // 如果流的质量小于等于用户首选质量，选择它
+            if (stream.id <= preferredQuality) {
+                return stream.baseUrl || stream.base_url;
+            }
+        }
+        
+        // 如果没找到合适的，返回可用的最高质量
+        return videoStreams[0].baseUrl || videoStreams[0].base_url;
+    }
+
     async showLyricSearchDialog(songTitle) {
         return new Promise((resolve) => {
             const dialog = document.getElementById('lyricSearchDialog');

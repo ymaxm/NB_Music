@@ -36,7 +36,7 @@ class MusiclistManager {
         const savedPlaylists = localStorage.getItem("nbmusic_playlists");
         if (savedPlaylists) {
             this.playlists = JSON.parse(savedPlaylists);
-            
+
             // 确保每个歌单有播放状态属性
             this.playlists.forEach(playlist => {
                 if (playlist.lastPlayedIndex === undefined) {
@@ -47,7 +47,7 @@ class MusiclistManager {
                 }
             });
         }
-    
+
         // 如果没有歌单，创建默认空歌单
         if (!this.playlists || this.playlists.length === 0) {
             this.playlists = [{
@@ -58,7 +58,7 @@ class MusiclistManager {
                 lastPlayedTime: 0
             }];
             this.savePlaylists();
-            
+
             // 设置初始UI状态
             this.uiManager.showDefaultUi();
             return;
@@ -81,7 +81,7 @@ class MusiclistManager {
                     this.playlistManager.playlist = [...playlist.songs];
                     this.playlistManager.playlistName = playlist.name;
                     this.playlistManager.currentPlaylistId = playlist.id;
-                    
+
                     // 设置播放进度
                     if (playlist.songs.length > 0) {
                         // 使用歌单自己保存的上次播放位置
@@ -100,7 +100,7 @@ class MusiclistManager {
 
         // 3. 更新 UI
         this.uiManager.renderPlaylist();
-        
+
         // 设置播放但不自动播放
         if (this.playlistManager.playlist.length > 0) {
             this.playlistManager.setPlayingNow(this.playlistManager.playingNow, false);
@@ -110,7 +110,7 @@ class MusiclistManager {
                 }, 500);
             }
         }
-        
+
         this.renderPlaylistList();
         this.renderSongList();
     }
@@ -252,7 +252,7 @@ class MusiclistManager {
             if (this.playlists.length === 1 && this.playlists[0].name === "默认歌单" && this.playlists[0].songs.length === 0) {
                 return;
             }
-            
+
             // 在保存前更新当前活跃歌单的播放位置
             if (this.activePlaylistIndex >= 0 && this.activePlaylistIndex < this.playlists.length) {
                 const activePlaylist = this.playlists[this.activePlaylistIndex];
@@ -261,9 +261,9 @@ class MusiclistManager {
                     activePlaylist.lastPlayedTime = this.playlistManager.audioPlayer?.audio?.currentTime || 0;
                 }
             }
-            
+
             localStorage.setItem("nbmusic_playlists", JSON.stringify(this.playlists));
-            
+
             // 保存当前播放的歌单ID和歌曲索引
             localStorage.setItem("nbmusic_current_playlist", JSON.stringify({
                 playlistId: this.playlistManager.currentPlaylistId,
@@ -325,40 +325,46 @@ class MusiclistManager {
                         currentPlaylist.lastPlayedTime = this.playlistManager.audioPlayer?.audio?.currentTime || 0;
                     }
                 }
-                
+
                 // 切换到新歌单
                 this.activePlaylistIndex = index;
                 const targetPlaylist = this.playlists[index];
-                
+
+
                 // 更新播放器状态
                 this.playlistManager.playlistName = targetPlaylist.name;
                 this.playlistManager.playlist = [...targetPlaylist.songs];
                 this.playlistManager.currentPlaylistId = targetPlaylist.id;
-                
+
                 // 恢复目标歌单的播放位置
                 const songIndex = Math.min(
-                    targetPlaylist.lastPlayedIndex || 0, 
+                    targetPlaylist.lastPlayedIndex || 0,
                     targetPlaylist.songs.length - 1
                 );
-                
+
                 // 先保存歌单状态
                 this.playlistManager.savePlaylists();
-                
+
                 // 先更新UI
                 this.playlistManager.uiManager.renderPlaylist();
                 this.renderPlaylistList();
                 this.renderSongList();
-                
+
+                // 空歌单
+                if (targetPlaylist.songs.length === 0) {
+                    this.uiManager.showDefaultUi();
+                    return;
+                }
                 // 然后恢复播放状态
                 if (targetPlaylist.songs.length > 0) {
                     const shouldPlay = !this.playlistManager.audioPlayer.audio.paused;
                     this.playlistManager.setPlayingNow(songIndex, false);
-                    
+
                     // 恢复播放进度
                     if (targetPlaylist.lastPlayedTime > 0) {
                         setTimeout(() => {
                             this.playlistManager.audioPlayer.audio.currentTime = targetPlaylist.lastPlayedTime;
-                            
+
                             // 如果当前正在播放，则自动播放新歌单
                             if (shouldPlay) {
                                 this.playlistManager.audioPlayer.audio.play()
@@ -489,9 +495,9 @@ class MusiclistManager {
     deletePlaylist(playlistId) {
         const index = this.playlists.findIndex(p => p.id === playlistId);
         if (index === -1) return;
-    
+
         const deleteBtn = document.querySelector(`li[data-id="${playlistId}"] .bi-trash`);
-    
+
         // 如果已经是确认状态
         if (deleteBtn.classList.contains('confirm-delete')) {
             // 如果删除的是当前播放的歌单
@@ -502,7 +508,7 @@ class MusiclistManager {
                     activePlaylist.lastPlayedIndex = this.playlistManager.playingNow;
                     activePlaylist.lastPlayedTime = this.playlistManager.audioPlayer?.audio?.currentTime || 0;
                 }
-                
+
                 // 获取前一个歌单或后一个歌单的索引
                 let newIndex;
                 if (index > 0) {
@@ -510,10 +516,10 @@ class MusiclistManager {
                 } else if (this.playlists.length > 1) {
                     newIndex = 1;
                 }
-    
+
                 // 删除歌单
                 this.playlists.splice(index, 1);
-    
+
                 // 如果没有其他歌单了
                 if (this.playlists.length === 0) {
                     // 创建默认歌单
@@ -527,7 +533,7 @@ class MusiclistManager {
                     this.playlistManager.playlistName = defaultPlaylist.name;
                     this.playlistManager.playlist = [];
                     this.playlistManager.currentPlaylistId = defaultPlaylist.id;
-                    
+
                     // 重置UI
                     this.playlistManager.uiManager.showDefaultUi();
                 } else {
@@ -537,7 +543,7 @@ class MusiclistManager {
                     this.playlistManager.playlistName = newPlaylist.name;
                     this.playlistManager.playlist = [...newPlaylist.songs];
                     this.playlistManager.currentPlaylistId = newPlaylist.id;
-                    
+
                     // 自动点击新的歌单
                     const newPlaylistElement = document.querySelector(`li[data-id="${newPlaylist.id}"]`);
                     if (newPlaylistElement) {
@@ -551,17 +557,17 @@ class MusiclistManager {
                     this.activePlaylistIndex--;
                 }
             }
-    
+
             this.savePlaylists();
             this.renderPlaylistList();
             this.renderSongList();
             return;
         }
-    
+
         // 第一次点击,显示确认状态
         deleteBtn.classList.add('confirm-delete');
         deleteBtn.style.color = 'red';
-    
+
         const confirmText = document.createElement('span');
         confirmText.textContent = '再次点击确认删除';
         confirmText.style.cssText = `
@@ -572,7 +578,7 @@ class MusiclistManager {
             margin-left: 5px;
         `;
         deleteBtn.parentNode.appendChild(confirmText);
-    
+
         // 3秒后恢复原状
         setTimeout(() => {
             deleteBtn.classList.remove('confirm-delete');
@@ -598,19 +604,19 @@ class MusiclistManager {
     async importFromBiliFav(mediaId) {
         let importNotification = null;
         let lyricsNotification = null;
-        
+
         try {
             // 1. 获取收藏夹信息
             const favResponse = await axios.get(`https://api.bilibili.com/x/v3/fav/folder/info?media_id=${mediaId}`);
             if (favResponse.data.code !== 0) {
                 throw new Error('获取收藏夹信息失败');
             }
-    
+
             const favInfo = favResponse.data.data;
             const totalCount = favInfo.media_count;
             const pageSize = 20;
             const totalPages = Math.ceil(totalCount / pageSize);
-    
+
             // 创建新歌单
             const playlistTitle = `${favInfo.title}`;
             const playlistIndex = this.playlists.length;
@@ -619,33 +625,33 @@ class MusiclistManager {
                 name: playlistTitle,
                 songs: []
             });
-    
+
             // 2. 收集所有要添加的歌曲信息
             const songsToAdd = [];
             let processedCount = 0;
-    
+
             // 显示导入进度通知
             importNotification = this.uiManager.showNotification(
-                `正在导入歌单: 0/${totalCount}`, 
+                `正在导入歌单: 0/${totalCount}`,
                 'info',
                 { showProgress: true, progress: 0 }
             );
-    
+
             // 3. 逐页获取视频信息
             for (let page = 1; page <= totalPages; page++) {
                 const resourcesResponse = await axios.get(
                     `https://api.bilibili.com/x/v3/fav/resource/list?media_id=${mediaId}&pn=${page}&ps=${pageSize}&platform=web`
                 );
-    
+
                 if (resourcesResponse.data.code !== 0) continue;
-    
+
                 const medias = resourcesResponse.data.data.medias;
                 if (!medias) continue;
-    
+
                 // 处理每个视频
                 for (const media of medias) {
                     if (media.attr === 1) continue; // 跳过失效视频
-    
+
                     try {
                         const cidResponse = await axios.get(`https://api.bilibili.com/x/web-interface/view?bvid=${media.bvid}`);
                         if (cidResponse.data.code === 0) {
@@ -658,15 +664,15 @@ class MusiclistManager {
                                 poster: media.cover,
                                 audio: null
                             });
-                            
+
                             // 更新导入进度
                             processedCount++;
                             const progress = (processedCount / totalCount) * 100;
-                            
+
                             // 更新进度条和文本
-                            importNotification.querySelector('.notification-message').textContent = 
+                            importNotification.querySelector('.notification-message').textContent =
                                 `正在导入歌单: ${processedCount}/${totalCount}`;
-                            importNotification.querySelector('.notification-progress-inner').style.width = 
+                            importNotification.querySelector('.notification-progress-inner').style.width =
                                 `${progress}%`;
                         }
                     } catch (error) {
@@ -675,10 +681,10 @@ class MusiclistManager {
                     }
                 }
             }
-    
+
             // 导入完成后移除通知
             importNotification.remove();
-    
+
             // 4. 获取歌词
             let lyricsCount = 0;
             lyricsNotification = this.uiManager.showNotification(
@@ -686,7 +692,7 @@ class MusiclistManager {
                 'info',
                 { showProgress: true, progress: 0 }
             );
-            
+
             const songsWithLyrics = [];
             for (const song of songsToAdd) {
                 try {
@@ -696,20 +702,20 @@ class MusiclistManager {
                     } else {
                         lyric = await this.musicSearcher.getLyrics(song.title);
                     }
-    
+
                     songsWithLyrics.push({
                         ...song,
                         lyric: lyric || "暂无歌词，尽情欣赏音乐"
                     });
-                    
+
                     // 更新歌词获取进度
                     lyricsCount++;
                     const progress = (lyricsCount / songsToAdd.length) * 100;
-                    
+
                     // 更新进度条和文本
-                    lyricsNotification.querySelector('.notification-message').textContent = 
+                    lyricsNotification.querySelector('.notification-message').textContent =
                         `正在获取歌词: ${lyricsCount}/${songsToAdd.length}`;
-                    lyricsNotification.querySelector('.notification-progress-inner').style.width = 
+                    lyricsNotification.querySelector('.notification-progress-inner').style.width =
                         `${progress}%`;
                 } catch (error) {
                     console.warn(`获取歌词失败: ${song.title}`, error);
@@ -719,34 +725,34 @@ class MusiclistManager {
                     });
                 }
             }
-    
+
             // 歌词获取完成后移除通知
             lyricsNotification.remove();
-    
+
             // 5. 更新歌单
             this.playlists[playlistIndex].songs = songsWithLyrics;
             this.handlePlaylistUpdate();
             this.savePlaylists();
-    
+
             // 6. 显示完成消息
             this.uiManager.showNotification(
                 `成功导入 ${songsWithLyrics.length} 首歌曲到歌单"${playlistTitle}"`,
                 'success'
             );
-    
+
             return {
                 success: true,
                 message: `成功导入 ${songsWithLyrics.length} 首歌曲到歌单"${playlistTitle}"`
             };
-    
+
         } catch (error) {
             // 发生错误时移除进度通知
             importNotification?.remove();
             lyricsNotification?.remove();
-            
+
             // 显示错误消息
             this.uiManager.showNotification('导入失败: ' + error.message, 'error');
-            
+
             console.error('从B站收藏夹导入失败:', error);
             return {
                 success: false,

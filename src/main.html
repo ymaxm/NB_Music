@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-cn" class="dark" style="--bgul: url(../img/NB_Music.png);">
+<html lang="zh-cn" class="dark" style="--bgul: url(../img/NB_Music.png); --theme-1-rgb: 106, 17, 203; --theme-2-rgb: 37, 117, 252; --bounce: cubic-bezier(0.175, 0.885, 0.32, 1.275);">
 
 <head>
   <meta charset="UTF-8" />
@@ -55,6 +55,22 @@
       </div>
     </div>
   </div>
+  <div id="update-container" class="update-container hide">
+    <div class="update-content">
+      <h2>应用更新</h2>
+      <div id="update-status" class="update-status">检查更新中...</div>
+      <div id="update-progress" class="progress-wrapper hide">
+        <div class="progress-text">下载进度: <span id="progress-percent">0%</span></div>
+        <div class="progress-bar">
+          <div id="progress-inner" class="progress-bar-inner"></div>
+        </div>
+      </div>
+      <div id="update-actions" class="update-actions hide">
+        <button id="update-later" class="dialog-btn dialog-btn-secondary">稍后更新</button>
+        <button id="update-now" class="dialog-btn dialog-btn-primary">立即更新</button>
+      </div>
+    </div>
+  </div>
   <div class="dialog-bg hide" id="importDialog">
     <div class="dialog">
       <h2>从B站收藏夹导入</h2>
@@ -74,6 +90,24 @@
       <div class="dialog-footer">
         <button id="cancelImport" class="dialog-btn dialog-btn-secondary">关闭</button>
         <button id="confirmImport" class="dialog-btn dialog-btn-primary">导入</button>
+      </div>
+    </div>
+  </div>
+  <div class="dialog-bg hide" id="firstUseDialog">
+    <div class="dialog">
+      <h2>欢迎使用 NB Music</h2>
+      <div class="dialog-content">
+        <div class="welcome-content">
+          <p>感谢您选择 NB Music！在开始使用前，请阅读以下使用条款：</p>
+          <div class="terms-container">
+            <p>1、音源从B站爬取，如果有侵权与本项目无关</p>
+            <p>2、本项目以GPL3.0协议开源，但是禁止一切商业用途</p>
+            <p>3、本项目提供的登录功能不会暴露您的任何隐私数据</p>
+          </div>
+        </div>
+      </div>
+      <div class="dialog-footer">
+        <button id="agreeTerms" class="dialog-btn dialog-btn-primary">我同意并开始使用</button>
       </div>
     </div>
   </div>
@@ -175,8 +209,16 @@
           </div>
           <div class="control">
             <div class="advanced-controls">
-              <select class="speed-control">
-              </select>
+              <div class="custom-select speed-control-wrapper">
+                <div class="select-selected">1x</div>
+                <div class="select-items">
+                  <div class="select-item" data-value="0.5">0.5x</div>
+                  <div class="select-item selected" data-value="1">1x</div>
+                  <div class="select-item" data-value="1.25">1.25x</div>
+                  <div class="select-item" data-value="1.5">1.5x</div>
+                  <div class="select-item" data-value="2">2x</div>
+                </div>
+              </div>
               <button class="import-btn"><i class="bi bi-download"></i></button>
             </div>
 
@@ -266,116 +308,287 @@
       <div class="setting hide">
         <div class="title">设置</div>
         <div class="setting-content">
-          <div class="setting-item">
-            <div class="setting-info">
-              <i class="bi bi-circle-half"></i>
-              <div class="words">
-                <div class="setting-name">主题</div>
-                <div class="setting-descrition">选择是否开启深色模式</div>
+          <div class="setting-group">
+            <!-- 关于卡片 -->
+            <div class="setting-category">
+              <div class="setting-category-title">
+                <i class="bi bi-info-circle"></i> 关于与帮助
+              </div>
+              <div class="setting-category-description">
+                了解项目信息及获取帮助
               </div>
             </div>
-            <div class="setting-value">
-              <nav data-nav-id="nav1">
-                <a class="active" data-key="theme" data-value="dark">深色</a>
-                <a data-key="theme" data-value="light">浅色</a>
-                <a data-key="theme" data-value="auto">跟随系统</a>
-              </nav>
+            <div class="about-card">
+              <div class="about-header">
+                <img src="../icons/NB Music.png" alt="NB Music Logo" class="app-logo">
+                <div class="app-info">
+                  <div class="app-name">NB Music</div>
+                  <div class="app-version">版本 <span id="app-version">1.0.0</span> <span
+                      class="version-badge">开源</span></div>
+                </div>
+              </div>
+              <div class="about-description">
+                一款由初中生开发的跨平台音乐播放器，无需VIP畅享音乐，支持从哔哩哔哩获取音频资源。享受最自由的音乐体验！
+              </div>
+              <div class="about-links">
+                <a href="#" class="about-link" id="github-link">
+                  <i class="bi bi-github"></i> GitHub 仓库
+                </a>
+                <a href="#" class="about-link" id="report-bug">
+                  <i class="bi bi-bug"></i> 报告问题
+                </a>
+                <a href="#" class="about-link" id="check-update">
+                  <i class="bi bi-arrow-repeat"></i> 检查更新
+                </a>
+                <a href="#" class="about-link" id="open-welcome">
+                  <i class="bi bi-emoji-smile"></i> 欢迎指南
+                </a>
+              </div>
+              <div class="dev-info">
+                <div class="dev-title">开发团队</div>
+                <div class="dev-team">
+                  由 <span class="dev-badge"><i class="bi bi-mortarboard"></i> 初中生</span>
+                  开发：
+                  <span class="dev-badge">NB-Group</span>
+                  <span class="dev-badge">User782Tec</span>
+                </div>
+              </div>
+              <!-- 常见问题帮助 -->
+              <div class="help-content">
+                <div class="help-section">
+                  <div class="help-title">
+                    <i class="bi bi-music-note-list"></i> 如何导入音乐？
+                  </div>
+                  <div class="help-text">
+                    在顶部搜索框中搜索歌曲名称或将B站收藏夹导入为歌单。点击左侧歌单页面中的导入按钮，输入B站收藏夹链接或ID即可快速导入。
+                  </div>
+                </div>
+                <div class="help-section">
+                  <div class="help-title">
+                    <i class="bi bi-exclamation-triangle"></i> 歌曲无法播放？
+                  </div>
+                  <div class="help-text">
+                    请尝试以下方法：1. 重新点击播放按钮 2. 登录账号以获取更高音质的音源 3. 在设置中关闭音频淡入淡出功能 4. 重启应用。如问题持续，请在GitHub仓库提交issue。
+                  </div>
+                </div>
+                <div class="help-section">
+                  <div class="help-title">
+                    <i class="bi bi-person-circle"></i> 登录有什么用？
+                  </div>
+                  <div class="help-text">
+                    登录B站账号后，您可以直接访问自己的收藏夹内容、获取大会员的Hi-res和4k。NB Music不会存储您的账号信息，所有认证均通过官方接口完成。
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-          <div class="setting-item">
-            <div class="setting-info">
-              <i class="bi bi-image"></i>
-              <div class="words">
-                <div class="setting-name">背景</div>
-                <div class="setting-descrition">设置应用程序的背景</div>
-              </div>
+          <!-- 外观设置 -->
+          <div class="setting-category">
+            <div class="setting-category-title">
+              <i class="bi bi-palette"></i> 外观设置
             </div>
-            <div class="setting-value">
-              <nav data-nav-id="nav2">
-                <a class="active" data-key="background" data-value="cover">视频封面</a>
-                <a data-key="background" data-value="video">动态视频</a>
-                <a data-key="background" data-value="none">无</a>
-              </nav>
+            <div class="setting-category-description">
+              调整NB Music的视觉效果
             </div>
           </div>
-          <div class="setting-item">
-            <div class="setting-info">
-              <i class="bi bi-music-note-list"></i>
-              <div class="words">
-                <div class="setting-name">歌词搜索</div>
-                <div class="setting-descrition">设置歌词搜索时，关键词的设置方式</div>
+          <div class="setting-group">
+            <div class="setting-item">
+              <div class="setting-info">
+                <i class="bi bi-circle-half"></i>
+                <div class="words">
+                  <div class="setting-name">主题</div>
+                  <div class="setting-descrition">选择是否开启深色模式</div>
+                </div>
+              </div>
+              <div class="setting-value">
+                <nav data-nav-id="nav1">
+                  <a class="active" data-key="theme" data-value="dark">深色</a>
+                  <a data-key="theme" data-value="light">浅色</a>
+                  <a data-key="theme" data-value="auto">跟随系统</a>
+                </nav>
               </div>
             </div>
-            <div class="setting-value">
-              <nav data-nav-id="nav3">
-                <a class="active" data-key="lyricSearchType" data-value="auto">自动搜索</a>
-                <a data-key="lyricSearchType" data-value="custom">手动输入</a>
-              </nav>
-            </div>
-          </div>
-          <div class="setting-item">
-            <div class="setting-info">
-              <i class="bi bi-filter"></i>
-              <div class="words">
-                <div class="setting-name">标题处理</div>
-                <div class="setting-descrition">如何显示歌曲标题(仅作用在侧边栏)</div>
+
+            <!-- 主题色选择器 -->
+            <div class="setting-item">
+              <div class="setting-info">
+                <i class="bi bi-palette-fill"></i>
+                <div class="words">
+                  <div class="setting-name">主题颜色</div>
+                  <div class="setting-descrition">设置应用的主要颜色</div>
+                </div>
+              </div>
+              <div class="setting-value color-pickers">
+                <div class="color-picker-group">
+                  <label>主色:</label>
+                  <input type="color" id="primaryColor" class="color-picker">
+                </div>
+                <div class="color-picker-group">
+                  <label>次色:</label>
+                  <input type="color" id="secondaryColor" class="color-picker">
+                </div>
+                <button id="resetThemeColors" class="reset-btn">
+                  <i class="bi bi-arrow-counterclockwise"></i> 重置
+                </button>
               </div>
             </div>
-            <div class="setting-value">
-              <nav data-nav-id="nav3">
-                <a data-key="extractTitle" data-value="on">提取关键词</a>
-                <a class="active" data-key="extractTitle" data-value="off">完整显示</a>
-                <a data-key="extractTitle" data-value="auto">直接截断</a>
-              </nav>
-            </div>
-          </div>
-          <div class="setting-item">
-            <div class="setting-info">
-              <i class="bi bi-cloud-download"></i>
-              <div class="words">
-                <div class="setting-name">缓存设置</div>
-                <div class="setting-descrition">是否开启缓存歌曲与视频(鸡肋)</div>
+
+            <!-- Mica透明度滑块 -->
+            <div class="setting-item">
+              <div class="setting-info">
+                <i class="bi bi-transparency"></i>
+                <div class="words">
+                  <div class="setting-name">Mica透明度</div>
+                  <div class="setting-descrition">调整界面的透明度效果</div>
+                </div>
+              </div>
+              <div class="setting-value slider-container">
+                <input type="range" id="micaOpacity" min="0.1" max="0.9" step="0.05" class="slider">
+                <span id="opacityValue">50%</span>
+                <button id="resetMicaOpacity" class="reset-btn" title="重置为默认值">
+                  <i class="bi bi-arrow-counterclockwise"></i>
+                </button>
               </div>
             </div>
-            <div class="setting-value">
-              <nav data-nav-id="nav4">
-                <a class="active" data-key="cacheEnabled" data-value="true">开启缓存</a>
-                <a data-key="cacheEnabled" data-value="false">关闭缓存</a>
-              </nav>
-              <button id="clearCache" class="cache-clear-btn">清除缓存</button>
-            </div>
-          </div>
-          <div class="setting-item">
-            <div class="setting-info">
-              <i class="bi bi-chat-square-text"></i>
-              <div class="words">
-                <div class="setting-name">歌词显示</div>
-                <div class="setting-descrition">是否显示歌词</div>
+            <!-- 背景填充 -->
+            <div class="setting-item">
+              <div class="setting-info">
+                <i class="bi bi-image"></i>
+                <div class="words">
+                  <div class="setting-name">背景</div>
+                  <div class="setting-descrition">设置应用程序背景</div>
+                </div>
+              </div>
+              <div class="setting-value">
+                <nav data-nav-id="nav2">
+                  <a class="active" data-key="background" data-value="cover">封面</a>
+                  <a data-key="background" data-value="video">视频</a>
+                  <a data-key="background" data-value="none">无</a>
+                </nav>
               </div>
             </div>
-            <div class="setting-value">
-              <nav data-nav-id="nav-lyrics">
-                <a class="active" data-key="lyricsEnabled" data-value="true">显示歌词</a>
-                <a data-key="lyricsEnabled" data-value="false">隐藏歌词</a>
-              </nav>
+
+            <!-- 音频播放设置 -->
+            <div class="setting-category">
+              <div class="setting-category-title">
+                <i class="bi bi-music-note-beamed"></i> 播放设置
+              </div>
+              <div class="setting-category-description">
+                调整音频播放相关功能
+              </div>
+            </div>
+            <div class="setting-group">
+              <div class="setting-item">
+                <div class="setting-info">
+                  <i class="bi bi-chat-square-text"></i>
+                  <div class="words">
+                    <div class="setting-name">歌词显示</div>
+                    <div class="setting-descrition">是否显示歌词</div>
+                  </div>
+                </div>
+                <div class="setting-value">
+                  <nav data-nav-id="nav-lyrics">
+                    <a class="active" data-key="lyricsEnabled" data-value="true">显示歌词</a>
+                    <a data-key="lyricsEnabled" data-value="false">隐藏歌词</a>
+                  </nav>
+                </div>
+              </div>
+              <div class="setting-item">
+                <div class="setting-info">
+                  <i class="bi bi-music-note"></i>
+                  <div class="words">
+                    <div class="setting-name">音频淡入淡出</div>
+                    <div class="setting-descrition">关闭可以修复部分情况下无声音的bug</div>
+                  </div>
+                </div>
+                <div class="setting-value">
+                  <nav data-nav-id="nav-fade">
+                    <a class="active" data-key="fadeEnabled" data-value="true">启用</a>
+                    <a data-key="fadeEnabled" data-value="false">禁用</a>
+                  </nav>
+                </div>
+              </div>
+              <div class="setting-item">
+                <div class="setting-info">
+                  <i class="bi bi-film"></i>
+                  <div class="words">
+                    <div class="setting-name">背景视频质量</div>
+                    <div class="setting-descrition">设置背景视频的清晰度(背景高斯模糊，没区别，建议低一点清晰度)</div>
+                  </div>
+                </div>
+                <div class="setting-value">
+                  <nav data-nav-id="nav-video-quality">
+                    <a data-key="videoQuality" data-value="16">360P</a>
+                    <a data-key="videoQuality" data-value="32">480P</a>
+                    <a class="active" data-key="videoQuality" data-value="64">720P</a>
+                    <a data-key="videoQuality" data-value="80">1080P</a>
+                    <a data-key="videoQuality" data-value="116">1080P60</a>
+                    <a data-key="videoQuality" data-value="120">4K</a>
+                  </nav>
+                </div>
+              </div>
+            </div>
+
+            <!-- 内容与数据设置 -->
+            <div class="setting-category">
+              <div class="setting-category-title">
+                <i class="bi bi-database"></i> 内容与数据
+              </div>
+              <div class="setting-category-description">
+                管理数据显示和存储方式
+              </div>
+            </div>
+            <div class="setting-group">
+              <div class="setting-item">
+                <div class="setting-info">
+                  <i class="bi bi-music-note-list"></i>
+                  <div class="words">
+                    <div class="setting-name">歌词搜索</div>
+                    <div class="setting-descrition">设置歌词搜索时，关键词的设置方式</div>
+                  </div>
+                </div>
+                <div class="setting-value">
+                  <nav data-nav-id="nav3">
+                    <a class="active" data-key="lyricSearchType" data-value="auto">自动搜索</a>
+                    <a data-key="lyricSearchType" data-value="custom">手动输入</a>
+                  </nav>
+                </div>
+              </div>
+              <div class="setting-item">
+                <div class="setting-info">
+                  <i class="bi bi-filter"></i>
+                  <div class="words">
+                    <div class="setting-name">标题处理</div>
+                    <div class="setting-descrition">如何显示歌曲标题(仅作用在侧边栏)</div>
+                  </div>
+                </div>
+                <div class="setting-value">
+                  <nav data-nav-id="nav3">
+                    <a data-key="extractTitle" data-value="on">提取关键词</a>
+                    <a class="active" data-key="extractTitle" data-value="off">完整显示</a>
+                    <a data-key="extractTitle" data-value="auto">直接截断</a>
+                  </nav>
+                </div>
+              </div>
+              <div class="setting-item">
+                <div class="setting-info">
+                  <i class="bi bi-cloud-download"></i>
+                  <div class="words">
+                    <div class="setting-name">缓存设置</div>
+                    <div class="setting-descrition">是否开启缓存歌曲与视频(鸡肋)</div>
+                  </div>
+                </div>
+                <div class="setting-value">
+                  <nav data-nav-id="nav4">
+                    <a class="active" data-key="cacheEnabled" data-value="true">开启缓存</a>
+                    <a data-key="cacheEnabled" data-value="false">关闭缓存</a>
+                  </nav>
+                  <button id="clearCache" class="cache-clear-btn">清除缓存</button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </div>
-  </div>
-  <div id="update-container" class="update-container hide">
-    <div class="update-content">
-      <div id="update-status">检查更新中...</div>
-      <div id="update-progress" class="progress-wrapper hide">
-        <div class="progress-text">下载进度: <span id="progress-percent">0%</span></div>
-        <div class="progress-bar">
-          <div id="progress-inner" class="progress-bar-inner"></div>
-        </div>
-      </div>
-      <div id="update-actions" class="update-actions hide">
-        <button id="update-now">立即更新</button>
-        <button id="update-later">稍后更新</button>
       </div>
     </div>
   </div>

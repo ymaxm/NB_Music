@@ -4,7 +4,9 @@
   align-items: center;
   justify-content: space-between;
   padding: 0px 16px;
-  background: var(--bg-1);
+  box-shadow: 0 0 0 3px;
+  /* 这个box-shadow是奇怪bug的修复代码，如果删掉，--mica颜色就不会铺满背景，非常奇怪 */
+  background-color: var(--mica);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border-1);
@@ -49,7 +51,7 @@
 }
 
 /* 搜索栏样式 */
-.titbar > .search {
+.titbar>.search {
   grid-column: 2;
   padding: 16px;
   -webkit-app-region: no-drag;
@@ -130,4 +132,19 @@
 
 .login-btn:hover {
   background: var(--rgba-16);
+}
+
+/* 用户头像样式 */
+.login-btn .user-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* 当头像加载失败时显示的默认样式 */
+.login-btn .user-avatar:not([src]),
+.login-btn .user-avatar[src=""] {
+  display: none;
 }

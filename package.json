@@ -1,6 +1,6 @@
 {
     "name": "nb_music",
-    "version": "0.2.8",
+    "version": "0.2.12",
     "description": "NB Music",
     "main": "src/main.js",
     "scripts": {

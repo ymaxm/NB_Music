@@ -6,6 +6,13 @@ const Storage = require("electron-store");
 const axios = require('axios');
 const { autoUpdater } = require("electron-updater");
 const storage = new Storage();
+function parseCommandLineArgs() {
+    const args = process.argv.slice(1);
+    const showWelcomeArg = args.includes('--show-welcome');
+    return {
+        showWelcome: showWelcomeArg
+    };
+}
 function setupAutoUpdater(win) {
     // 开发环境跳过更新检查
     if (!app.isPackaged) return;
@@ -19,12 +26,12 @@ function setupAutoUpdater(win) {
 
     // 检查更新出错
     autoUpdater.on('error', (err) => {
-        win.webContents.send('update-error', err.message);
+        win.webContents.send('update-error', (err.message));
     });
 
     // 检查到新版本
     autoUpdater.on('update-available', (info) => {
-        win.webContents.send('update-available', info);
+        win.webContents.send('update-available', (info));
     });
 
     // 没有新版本
@@ -34,7 +41,7 @@ function setupAutoUpdater(win) {
 
     // 下载进度
     autoUpdater.on('download-progress', (progress) => {
-        win.webContents.send('download-progress', progress);
+        win.webContents.send('download-progress', (progress));
     });
 
     // 更新下载完成
@@ -147,6 +154,10 @@ function createWindow() {
             frame: false,
             icon: getIconPath(),
             backgroundColor: "#2f3241",
+            width: 1280,           // 添加合适的宽度
+            height: 800,           // 添加合适的高度
+            minWidth: 1280,         // 设置最小宽度
+            minHeight: 800,        // 设置最小高度
             webPreferences: {
                 nodeIntegration: true,
                 contextIsolation: false,
@@ -156,9 +167,14 @@ function createWindow() {
         });
         setupAutoUpdater(win);
         win.loadFile("src/main.html");
+        win.maximize(); 
         // if (!app.isPackaged) {
         // win.webContents.openDevTools();
         // }
+        const cmdArgs = parseCommandLineArgs();
+        win.webContents.on('did-finish-load', () => {
+            win.webContents.send('command-line-args', cmdArgs);
+        });
         ipcMain.on("window-minimize", () => {
             win.minimize();
         });
@@ -251,6 +267,7 @@ app.whenReady().then(async () => {
         });
     }
     createWindow();
+    setupIPC(); 
     const cookieString = await getBilibiliCookies();
     if (cookieString) {
         session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
@@ -273,5 +290,33 @@ app.on("window-all-closed", () => {
 if (!app.isPackaged) {
     electronReload(__dirname, {
         electron: path.join(process.cwd(), "node_modules", ".bin", "electron")
+    });
+}
+
+function setupIPC() {
+    ipcMain.handle('get-app-version', () => {
+        return app.getVersion();
+    });
+
+    ipcMain.on('check-for-updates', () => {
+        // 如果不是打包后的应用，显示开发环境提示
+        if (!app.isPackaged) {
+            BrowserWindow.getFocusedWindow()?.webContents.send('update-not-available', {
+                message: '开发环境中无法检查更新'
+            });
+            return;
+        }
+        
+        // 执行更新检查
+        autoUpdater.checkForUpdates()
+            .catch(err => {
+                console.error('更新检查失败:', err);
+                BrowserWindow.getFocusedWindow()?.webContents.send('update-error', err.message);
+            });
+    });
+
+    ipcMain.on('install-update', () => {
+        // 安装已下载的更新
+        autoUpdater.quitAndInstall(true, true);
     });
 }

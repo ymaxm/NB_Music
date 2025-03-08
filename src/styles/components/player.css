@@ -1,5 +1,5 @@
 /* 播放器内容布局 */
-.content > .player {
+.content>.player {
   display: flex;
   height: 100%;
   width: 100%;
@@ -46,7 +46,7 @@
   text-align: center;
 }
 
-.content > * > .title {
+.content>*>.title {
   font-size: 24px;
   font-weight: 600;
   margin-bottom: 8px;
@@ -99,10 +99,12 @@
     width: 30%;
     opacity: 0.8;
   }
+
   50% {
     width: 45%;
     opacity: 1;
   }
+
   100% {
     left: 100%;
     width: 30%;
@@ -114,6 +116,7 @@
   0% {
     background-position: 0% 0%;
   }
+
   100% {
     background-position: 200% 0%;
   }
@@ -141,7 +144,7 @@
   transform: scale(0.95);
 }
 
-.buttons > * {
+.buttons>* {
   padding: 5px 10px;
   border-radius: 8px;
   margin: 0px 4px;
@@ -150,7 +153,7 @@
 }
 
 /* 播放/暂停按钮特殊样式 */
-.buttons > .play {
+.buttons>.play {
   position: relative;
   overflow: hidden;
   width: 100px;
@@ -163,15 +166,16 @@
   animation: gradientMove 3s ease infinite;
   display: flex;
   align-items: center;
+  box-shadow: 0px 0px 20px 0px rgb(0 0 0);
   justify-content: center;
 }
 
-.buttons > .play:hover {
+.buttons>.play:hover {
   transform: scale(1.05) translateY(-3px);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+  box-shadow: 0px 0px 20px 0px rgb(0 0 0);
 }
 
-.buttons > .play::before {
+.buttons>.play::before {
   content: "";
   position: absolute;
   top: 0;
@@ -181,12 +185,12 @@
   transition: 0.5s;
 }
 
-.buttons > .play:hover::before {
+.buttons>.play:hover::before {
   left: 100%;
   transition: 0.5s;
 }
 
-.buttons > .play::after {
+.buttons>.play::after {
   content: "";
   position: absolute;
   inset: -2px;
@@ -196,61 +200,62 @@
 }
 
 /* 播放/暂停内部元素样式 */
-.buttons > .play > .pause > * {
+.buttons>.play>.pause>* {
   background-color: white;
   transition: all 0.5s;
   border-radius: 10px;
 }
 
-.buttons > .play > .play {
+.buttons>.play>.play {
   width: 100px;
+  background: var(--s3d);
   height: 100px;
 }
 
-.buttons > .play > .play > svg {
+.buttons>.play>.play>svg {
   box-shadow: inset 0 0 0 5px white;
   border-radius: 100%;
 }
 
-.buttons > .play.played > .pause > * {
+.buttons>.play.played>.pause>* {
   width: 6px;
   height: 30px;
   position: absolute;
   top: 35px;
 }
 
-.buttons > .play.played > .pause > .left {
+.buttons>.play.played>.pause>.left {
   left: 38px;
 }
 
-.buttons > .play.played > .pause > .right {
+.buttons>.play.played>.pause>.right {
   right: 38px;
 }
 
-.buttons > .play.played > .play > svg {
+.buttons>.play.played>.play>svg {
   transition: all ease 0.5s !important;
 }
 
-.buttons > .play.paused > .pause > * {
+.buttons>.play.paused>.pause>* {
   width: 6px;
   height: 34px;
   position: absolute;
   top: 33px;
 }
 
-.buttons > .play.paused > .pause > .left {
+.buttons>.play.paused>.pause>.left {
   left: 38px;
   transform: rotate(120deg);
   translate: 9px -7px;
 }
 
-.buttons > .play.paused > .pause > .right {
+.buttons>.play.paused>.pause>.right {
   right: 38px;
   transform: rotate(-120deg);
   translate: -9px 7px;
 }
 
-.buttons > .play.paused > .play > svg {
+.buttons>.play.paused>.play>svg {
   fill: white;
   transition: all cubic-bezier(0.75, 0, 1, 1.06) 0.7s;
 }
@@ -275,6 +280,9 @@
   width: auto;
 }
 
+.custom-select {
+  border: 1px solid var(--border-1);
+}
 .download-btn {
   padding: 4px 12px;
   border: none;

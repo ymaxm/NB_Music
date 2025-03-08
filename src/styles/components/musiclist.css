@@ -164,8 +164,8 @@ li:hover .playlist-buttons {
 }
 
 /* 播放列表和歌曲列表项 */
-#playlistList > *,
-#songList > * {
+#playlistList>*,
+#songList>* {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -174,8 +174,8 @@ li:hover .playlist-buttons {
   border-radius: 8px;
 }
 
-#playlistList > *:hover,
-#songList > *:hover {
+#playlistList>*:hover,
+#songList>*:hover {
   background-color: var(--border-1);
 }
 
@@ -332,6 +332,6 @@ li.active {
   overflow-y: auto;
 }
 
-#lovelist > .song {
+#lovelist>.song {
   border: 1px solid var(--border-1);
 }

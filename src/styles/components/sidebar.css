@@ -8,8 +8,8 @@
   grid-column: 1;
   grid-row: 1 / span 2;
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  display: flex !important; 
-  flex-direction: column; 
+  display: flex !important;
+  flex-direction: column;
   height: 100%;
 }
 
@@ -37,14 +37,14 @@
 
 .list a:hover {
   background: linear-gradient(90deg,
-          rgba(var(--theme-1), 0.5),
-          rgba(var(--theme-2), 0.5));
+      rgba(var(--theme-1), 0.5),
+      rgba(var(--theme-2), 0.5));
 }
 
 .list a.check {
   background: linear-gradient(90deg,
-          rgba(var(--theme-1), 0.5),
-          rgba(var(--theme-2), 0.5));
+      rgba(var(--theme-1), 0.5),
+      rgba(var(--theme-2), 0.5));
 }
 
 /* 焦点指示器 */
@@ -87,7 +87,7 @@
   position: relative;
 }
 
-#function-list > a > i {
+#function-list>a>i {
   background-image: linear-gradient(100deg, var(--theme-1), var(--theme-2));
   -webkit-background-clip: text;
   background-clip: text;
@@ -112,9 +112,9 @@
 .playing-list {
   height: calc(100% - 120px);
   margin-top: 20px;
-  display: flex; 
-  flex-direction: column; 
-  min-height: 0; 
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   max-height: 100%;
 }
 

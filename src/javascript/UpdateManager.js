@@ -24,8 +24,10 @@ class UpdateManager {
             this.progressWrapper.classList.remove('hide');
         });
 
-        ipcRenderer.on('update-not-available', () => {
-            this.showStatus('当前已是最新版本');
+        ipcRenderer.on('update-not-available', (_, info) => {
+            // 可以处理额外信息，比如开发环境的消息
+            const message = info && info.message ? info.message : '当前已是最新版本';
+            this.showStatus(message, 'success');
             setTimeout(() => this.hide(), 3000);
         });
 
@@ -33,33 +35,60 @@ class UpdateManager {
             const percent = Math.round(progress.percent);
             this.progressBar.style.width = `${percent}%`;
             this.progressText.textContent = `${percent}%`;
-            this.showStatus(`正在下载更新: ${Math.round(progress.bytesPerSecond / 1024)} KB/s`);
+            this.showStatus(`正在下载更新...`);
         });
 
         ipcRenderer.on('update-downloaded', () => {
-            this.showStatus('更新已下载完成,是否立即安装?');
+            this.showStatus('更新已下载完成', 'success');
             this.progressWrapper.classList.add('hide');
             this.actions.classList.remove('hide');
             
             // 绑定按钮事件
-            document.getElementById('update-now').onclick = () => {
-                ipcRenderer.send('install-update');
-            };
+            const updateNowBtn = document.getElementById('update-now');
+            const updateLaterBtn = document.getElementById('update-later');
             
-            document.getElementById('update-later').onclick = () => {
+            // 移除旧的事件监听器
+            const newUpdateNowBtn = updateNowBtn.cloneNode(true);
+            const newUpdateLaterBtn = updateLaterBtn.cloneNode(true);
+            
+            updateNowBtn.parentNode.replaceChild(newUpdateNowBtn, updateNowBtn);
+            updateLaterBtn.parentNode.replaceChild(newUpdateLaterBtn, updateLaterBtn);
+            
+            // 添加新的事件监听器
+            newUpdateNowBtn.addEventListener('click', () => {
+                ipcRenderer.send('install-update');
+            });
+            
+            newUpdateLaterBtn.addEventListener('click', () => {
                 this.hide();
-            };
+            });
         });
     }
 
     show() {
+        // 重置状态
+        this.progressWrapper.classList.add('hide');
+        this.actions.classList.add('hide');
+        
+        // 显示对话框
         this.container.classList.remove('hide');
+        
+        // 使用动画效果显示
+        requestAnimationFrame(() => {
+            this.container.style.opacity = '1';
+        });
     }
 
     hide() {
-        this.container.classList.add('hide');
-        this.progressWrapper.classList.add('hide');
-        this.actions.classList.add('hide');
+        // 使用淡出效果
+        this.container.style.opacity = '0';
+        
+        // 等待动画完成后隐藏
+        setTimeout(() => {
+            this.container.classList.add('hide');
+            this.progressWrapper.classList.add('hide');
+            this.actions.classList.add('hide');
+        }, 300);
     }
 
     showStatus(message, type = 'info') {

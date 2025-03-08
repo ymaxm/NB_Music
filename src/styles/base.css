@@ -11,6 +11,9 @@
   transition: all 0.3s ease-in-out;
 }
 
+*:focus-visible {
+  outline: none;
+}
 html {
   width: 100%;
 }
