@@ -11,7 +11,7 @@
 
 /* 通知样式 */
 .notification {
-  background: var(--bg-2);
+  background: var(--mica);
   backdrop-filter: blur(20px);
   border: 1px solid var(--border-1);
   border-radius: 8px;

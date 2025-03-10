@@ -148,36 +148,6 @@ body {
   display: none !important;
 }
 
-/* 滚动条样式 */
-::-webkit-scrollbar:hover {
-  background-color: #ffffff10;
-}
-
-::-webkit-scrollbar:hover {
-  background-color: var(--card);
-}
-
-::-webkit-scrollbar {
-  border-radius: 7px;
-  height: 14px;
-  width: 14px;
-}
-
-::-webkit-scrollbar-corner {
-  display: none;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  border: 4px solid transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #7f7f7f70;
-  background-clip: padding-box;
-  border: 6px solid transparent;
-  border-radius: 10px;
-}
-
 /* 响应式布局 */
 @media screen and (max-width: 1200px) {
   .mica {

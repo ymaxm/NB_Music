@@ -85,105 +85,100 @@ class MusicSearcher {
             this.uiManager.show(".search-result");
             const list = document.querySelector(".search-result .list");
 
-            // 显示加载动画
-            list.innerHTML = `<div class="loading">
-    <svg class="gegga">
-        <defs>
-          <filter id="gegga">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="7" result="blur" />
-            <feColorMatrix
-              in="blur"
-              mode="matrix"
-              values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 20 -10"
-              result="inreGegga"
-            />  
-            <feComposite in="SourceGraphic" in2="inreGegga" operator="atop" />
-          </filter>
-        </defs>
-      </svg>
-    <svg class="snurra" width="200" height="200" viewBox="0 0 200 200">
-        <defs>
-          <linearGradient id="linjärGradient">
-            <stop class="stopp1" offset="0" />
-            <stop class="stopp2" offset="1" />
-          </linearGradient>
-          <linearGradient
-            y2="160"
-            x2="160"
-            y1="40"
-            x1="40"
-            gradientUnits="userSpaceOnUse"
-            id="gradient"
-            xlink:href="#linjärGradient"
-          />
-        </defs>
-        <path
-          class="halvan"
-          d="m 164,100 c 0,-35.346224 -28.65378,-64 -64,-64 -35.346224,0 -64,28.653776 -64,64 0,35.34622 28.653776,64 64,64 35.34622,0 64,-26.21502 64,-64 0,-37.784981 -26.92058,-64 -64,-64 -37.079421,0 -65.267479,26.922736 -64,64 1.267479,37.07726 26.703171,65.05317 64,64 37.29683,-1.05317 64,-64 64,-64"
-        />
-        <circle class="strecken" cx="100" cy="100" r="64" />
-      </svg>
-    <svg class="skugga" width="200" height="200" viewBox="0 0 200 200">
-        <path
-          class="halvan"
-          d="m 164,100 c 0,-35.346224 -28.65378,-64 -64,-64 -35.346224,0 -64,28.653776 -64,64 0,35.34622 28.653776,64 64,64 35.34622,0 64,-26.21502 64,-64 0,-37.784981 -26.92058,-64 -64,-64 -37.079421,0 -65.267479,26.922736 -64,64 1.267479,37.07726 26.703171,65.05317 64,64 37.29683,-1.05317 64,-64 64,-64"
-        />
-        <circle class="strecken" cx="100" cy="100" r="64" />
-      </svg>
-      <style>
-      .loading {
-    align-items: center;
-    display: flex;
-    justify-content: center;
-    overflow: hidden;
-        width: 100%;
-      height: 100%;
-    }
-    .loading>.gegga {
-    width: 0;
-    }
-    .snurra {
-    filter: url(#gegga);
-    }
-    .stopp1 {
-    stop-color: var(--theme-1);
-    }
-    .stopp2 {
-    stop-color: var(--theme-2);
-    }
-    .halvan {
-    animation: Snurra1 10s infinite linear;
-    stroke-dasharray: 180 800;
-    fill: none;
-    stroke: url(#gradient);
-    stroke-width: 23;
-    stroke-linecap: round;
-    }
-    .strecken {
-    animation: Snurra1 3s infinite linear;
-    stroke-dasharray: 26 54;
-    fill: none;
-    stroke: url(#gradient);
-    stroke-width: 23;
-    stroke-linecap: round;
-    }
-    .skugga {
-    filter: blur(5px);
-    opacity: 0.3;
-    position: absolute;
-    transform: translate(3px, 3px);
-    }
-    @keyframes Snurra1 {
-    0% {
-      stroke-dashoffset: 0;
-    }
-    100% {
-      stroke-dashoffset: -403px;
-    }
-    }
-    
-      </style>
-    </div>`;
+            // 显示骨架屏加载效果 - 替换旧的加载动画
+            const skeletonItems = Array(6).fill('').map(() => `
+                <div class="skeleton-item">
+                    <div class="skeleton-poster shine"></div>
+                    <div class="skeleton-info">
+                        <div class="skeleton-title shine"></div>
+                        <div class="skeleton-artist shine"></div>
+                    </div>
+                    <div class="skeleton-actions shine"></div>
+                </div>
+            `).join('');
+            
+            list.innerHTML = `
+                <div class="skeleton-container">
+                    ${skeletonItems}
+                    <style>
+                        .skeleton-container {
+                            width: 100%;
+                            display: flex;
+                            flex-direction: column;
+                            gap: 16px;
+                            padding: 8px;
+                        }
+                        .skeleton-item {
+                            display: flex;
+                            align-items: center;
+                            gap: 16px;
+                            padding: 12px;
+                            border-radius: 8px;
+                            background: rgba(255, 255, 255, 0.05);
+                            height: 72px;
+                        }
+                        .skeleton-poster {
+                            width: 48px;
+                            height: 48px;
+                            border-radius: 8px;
+                            background: rgba(255, 255, 255, 0.08);
+                            flex-shrink: 0;
+                        }
+                        .skeleton-info {
+                            flex: 1;
+                            display: flex;
+                            flex-direction: column;
+                            gap: 8px;
+                        }
+                        .skeleton-title {
+                            width: 70%;
+                            height: 16px;
+                            border-radius: 4px;
+                            background: rgba(255, 255, 255, 0.08);
+                        }
+                        .skeleton-artist {
+                            width: 40%;
+                            height: 12px;
+                            border-radius: 4px;
+                            background: rgba(255, 255, 255, 0.08);
+                        }
+                        .skeleton-actions {
+                            width: 32px;
+                            height: 32px;
+                            border-radius: 50%;
+                            background: rgba(255, 255, 255, 0.08);
+                        }
+                        .shine {
+                            background: linear-gradient(90deg, 
+                                rgba(255, 255, 255, 0.05) 25%, 
+                                rgba(255, 255, 255, 0.15) 50%, 
+                                rgba(255, 255, 255, 0.05) 75%);
+                            background-size: 200% 100%;
+                            animation: shine 1.5s infinite linear;
+                        }
+                        @keyframes shine {
+                            0% { background-position: -200% 0; }
+                            100% { background-position: 200% 0; }
+                        }
+                        :root.light .skeleton-item {
+                            background: rgba(0, 0, 0, 0.05);
+                        }
+                        :root.light .skeleton-poster,
+                        :root.light .skeleton-title,
+                        :root.light .skeleton-artist,
+                        :root.light .skeleton-actions {
+                            background: rgba(0, 0, 0, 0.08);
+                        }
+                        :root.light .shine {
+                            background: linear-gradient(90deg, 
+                                rgba(0, 0, 0, 0.05) 25%, 
+                                rgba(0, 0, 0, 0.15) 50%, 
+                                rgba(0, 0, 0, 0.05) 75%);
+                            background-size: 200% 100%;
+                        }
+                    </style>
+                </div>
+            `;
 
             // 搜索处理
             const searchResults = await this.searchBilibiliVideo(keyword, page);

@@ -23,7 +23,7 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #7f7f7f70;
+  background: var(--rgba-9);
   background-clip: padding-box;
   border: 6px solid transparent;
   border-radius: 10px;

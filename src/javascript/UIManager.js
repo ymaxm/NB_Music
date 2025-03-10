@@ -24,6 +24,7 @@ class UIManager {
         this.initializeAdvancedControls();
         this.initializeSearchSuggestions();
         this.initializeCustomSelects();
+        this.initializeWelcomeDialog();
     }
     initializeSearchSuggestions() {
         const searchInput = document.querySelector('.search input');
@@ -894,6 +895,76 @@ class UIManager {
         document.querySelector(".progress-bar-inner").style.width = "0%";
         this.audioPlayer.audio.src = "";
         this.lyricsPlayer.changeLyrics("");
+    }
+
+    initializeWelcomeDialog() {
+        // 处理复选框状态变化
+        const agreeCheckbox = document.getElementById('agreeCheckbox');
+        const agreeButton = document.getElementById('agreeTerms');
+        
+        if (agreeCheckbox && agreeButton) {
+            // 复选框状态变化时更新按钮状态
+            agreeCheckbox.addEventListener('change', () => {
+                agreeButton.disabled = !agreeCheckbox.checked;
+            });
+        }
+        
+        // 免责声明链接点击事件
+        const disclaimerLink = document.getElementById('disclaimer-link');
+        if (disclaimerLink) {
+            disclaimerLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                // 使用Electron的shell模块打开外部链接
+                ipcRenderer.send('open-external-link', 'https://nb-group.github.io/nb-music/disclaimer');
+            });
+        }
+        
+        // 同意按钮点击事件
+        if (agreeButton) {
+            agreeButton.addEventListener('click', () => {
+                if (agreeCheckbox && agreeCheckbox.checked) {
+                    // 标记已经看过首次使用对话框
+                    localStorage.setItem("nbmusic_first_use_seen", "true");
+                    
+                    // 隐藏对话框
+                    const firstUseDialog = document.getElementById("firstUseDialog");
+                    if (firstUseDialog) {
+                        firstUseDialog.classList.add("hide");
+                    }
+                } else {
+                    this.showNotification('请先同意免责声明', 'warning');
+                }
+            });
+        }
+    }
+    
+    /**
+     * 检查是否是首次使用应用，如果是则显示欢迎对话框
+     */
+    checkFirstUse() {
+        // 检查是否是首次使用
+        const hasUsedBefore = localStorage.getItem("nbmusic_first_use_seen");
+        
+        if (!hasUsedBefore) {
+            this.showWelcomeDialog();
+        }
+    }
+    
+    /**
+     * 显示欢迎对话框
+     */
+    showWelcomeDialog() {
+        const firstUseDialog = document.getElementById("firstUseDialog");
+        if (firstUseDialog) {
+            firstUseDialog.classList.remove("hide");
+            
+            // 重置复选框和按钮状态
+            const agreeCheckbox = document.getElementById('agreeCheckbox');
+            const agreeButton = document.getElementById('agreeTerms');
+            
+            if (agreeCheckbox) agreeCheckbox.checked = false;
+            if (agreeButton) agreeButton.disabled = true;
+        }
     }
 }
 

@@ -95,19 +95,46 @@
   </div>
   <div class="dialog-bg hide" id="firstUseDialog">
     <div class="dialog">
-      <h2>欢迎使用 NB Music</h2>
-      <div class="dialog-content">
-        <div class="welcome-content">
-          <p>感谢您选择 NB Music！在开始使用前，请阅读以下使用条款：</p>
-          <div class="terms-container">
-            <p>1、音源从B站爬取，如果有侵权与本项目无关</p>
-            <p>2、本项目以GPL3.0协议开源，但是禁止一切商业用途</p>
-            <p>3、本项目提供的登录功能不会暴露您的任何隐私数据</p>
-          </div>
+      <div class="dialog-header">
+        <div class="dialog-header-content">
+          <img src="../icons/NB Music.png" alt="NB Music Logo" class="welcome-icon">
+          <h2>欢迎使用 NB Music</h2>
+          <p class="welcome-subtitle">一款由热爱音乐的初中生开发的跨平台音乐播放器</p>
         </div>
       </div>
+      
+      <div class="dialog-content">
+        <div class="welcome-features">
+          <div class="feature-item">
+            <div class="feature-icon"><i class="bi bi-music-note-beamed"></i></div>
+            <div class="feature-title">无限畅听</div>
+            <div class="feature-desc">无需会员，尽情享受音乐</div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon"><i class="bi bi-collection-play"></i></div>
+            <div class="feature-title">多平台资源</div>
+            <div class="feature-desc">支持从B站获取音频</div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon"><i class="bi bi-laptop"></i></div>
+            <div class="feature-title">跨平台支持</div>
+            <div class="feature-desc">Windows、Mac和Linux</div>
+          </div>
+        </div>
+        
+        <div class="terms-container">
+          <div class="terms-title">免责声明与用户协议</div>
+          <p>使用本应用即表示您已阅读并同意<a href="#" class="highlight-link" id="disclaimer-link">免责声明</a></p>
+        </div>
+        
+        <div class="agreement-checkbox">
+          <input type="checkbox" id="agreeCheckbox">
+          <label for="agreeCheckbox">我已阅读并同意上述免责声明与用户协议</label>
+        </div>
+      </div>
+      
       <div class="dialog-footer">
-        <button id="agreeTerms" class="dialog-btn dialog-btn-primary">我同意并开始使用</button>
+        <button id="agreeTerms" class="dialog-btn dialog-btn-primary" disabled>开始体验音乐之旅</button>
       </div>
     </div>
   </div>

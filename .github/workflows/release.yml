@@ -15,7 +15,7 @@ jobs:
         id: create_release
         uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           tag_name: ${{ github.ref }}
           release_name: Release ${{ github.ref }}
@@ -28,7 +28,14 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          submodules: true
+          token: ${{ secrets.GH_TOKEN }}
       
+      - name: Setup Git Credentials for Submodules
+        run: |
+          git config --global url."https://oauth2:${{ secrets.GITLAB_ACCESS_TOKEN }}@gitlab.com".insteadOf "https://gitlab.com"
+          
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
@@ -41,12 +48,12 @@ jobs:
       - name: Build Windows
         run: yarn build:win
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
           
       - name: Upload Windows artifacts
         uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           upload_url: ${{ needs.release.outputs.release_id }}
           asset_path: ./dist/*.exe
@@ -59,7 +66,14 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          submodules: true
+          token: ${{ secrets.GH_TOKEN }}
       
+      - name: Setup Git Credentials for Submodules
+        run: |
+          git config --global url."https://oauth2:${{ secrets.GITLAB_ACCESS_TOKEN }}@gitlab.com".insteadOf "https://gitlab.com"
+          
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
@@ -72,12 +86,12 @@ jobs:
       - name: Build Linux
         run: yarn electron-builder --linux
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
           
       - name: Upload Linux artifacts
         uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           upload_url: ${{ needs.release.outputs.release_id }}
           asset_path: ./dist/*.AppImage
@@ -90,7 +104,14 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          submodules: true
+          token: ${{ secrets.GH_TOKEN }}
       
+      - name: Setup Git Credentials for Submodules
+        run: |
+          git config --global url."https://oauth2:${{ secrets.GITLAB_ACCESS_TOKEN }}@gitlab.com".insteadOf "https://gitlab.com"
+          
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
@@ -103,12 +124,12 @@ jobs:
       - name: Build macOS
         run: yarn electron-builder --mac
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
           
       - name: Upload macOS artifacts
         uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           upload_url: ${{ needs.release.outputs.release_id }}
           asset_path: ./dist/*.dmg
@@ -122,7 +143,7 @@ jobs:
       - name: Publish Release
         uses: actions/github-script@v6
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.GH_TOKEN }}
           script: |
             github.rest.repos.updateRelease({
               release_id: ${{ needs.release.outputs.release_id }},

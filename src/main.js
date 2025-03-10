@@ -1,4 +1,4 @@
-const { app, BrowserWindow, session, ipcMain, Menu, Tray } = require("electron");
+const { app, BrowserWindow, session, ipcMain, Menu, Tray, shell } = require("electron");
 const path = require("path");
 const puppeteer = require("puppeteer");
 const electronReload = require("electron-reload");
@@ -318,5 +318,9 @@ function setupIPC() {
     ipcMain.on('install-update', () => {
         // 安装已下载的更新
         autoUpdater.quitAndInstall(true, true);
+    });
+
+    ipcMain.on('open-external-link', (_, url) => {
+        shell.openExternal(url);
     });
 }
