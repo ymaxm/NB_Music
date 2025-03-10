@@ -83,10 +83,23 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
         
+      # 添加文件权限修改步骤
+      - name: Set correct permissions
+        run: |
+          mkdir -p ./dist
+          chmod -R 777 ./dist || true
+        
       - name: Build Linux
         run: yarn electron-builder --linux
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          
+      # 构建后修复权限以便清理
+      - name: Fix permissions after build
+        if: always()
+        run: |
+          sudo chown -R $(whoami):$(id -g) ./dist || true
+          sudo chmod -R 777 ./dist || true
           
       - name: Upload Linux artifacts
         uses: actions/upload-release-asset@v1
