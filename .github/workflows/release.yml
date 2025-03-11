@@ -3,66 +3,132 @@ name: Build and Release
 on:
   push:
     tags:
-      - 'v*'
+      - 'v*'  # 当推送版本标签如 v1.0.0 时触发工作流
 
 jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+
   build:
     name: Build (${{ matrix.os }})
+    needs: release
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [windows-latest, macos-latest, ubuntu-latest]
-
     steps:
-      - name: 检出代码
-        uses: actions/checkout@v3
-        with:
-          submodules: recursive
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: 设置 Node.js
-        uses: actions/setup-node@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
           cache: 'yarn'
 
-      - name: 安装依赖
+      - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: 安装 Linux 构建依赖
+      - name: Build Windows
+        if: matrix.os == 'windows-latest'
+        run: yarn build:win
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build macOS
+        if: matrix.os == 'macos-latest'
+        run: yarn electron-builder build --mac
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Linux
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libpng-dev libxkbfile-dev xz-utils libx11-dev libxtst-dev
-
-      - name: 构建应用
-        run: yarn build
+          sudo apt-get install -y libx11-dev libxkbfile-dev libsecret-1-dev libasound2-dev
+          yarn electron-builder build --linux
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 上传 Windows 构建产物
+      - name: Upload Windows Artifacts
         if: matrix.os == 'windows-latest'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: win-artifacts
-          path: |
-            dist/*.exe
-            dist/latest.yml
+          name: nb_music-windows
+          path: dist/*.exe
 
-      - name: 上传 macOS 构建产物
+      - name: Upload macOS Artifacts
         if: matrix.os == 'macos-latest'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: mac-artifacts
+          name: nb_music-macos
           path: |
             dist/*.dmg
-            dist/latest-mac.yml
+            dist/*.zip
 
-      - name: 上传 Linux 构建产物
+      - name: Upload Linux Artifacts
         if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: linux-artifacts
+          name: nb_music-linux
           path: |
             dist/*.AppImage
             dist/*.deb
-            dist/latest-linux.yml
+
+      - name: Upload Release Assets Windows
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.release.outputs.upload_url }}
+          asset_path: ./dist/NB Music-v${{ github.ref_name }}-win-x64.exe
+          asset_name: NB-Music-v${{ github.ref_name }}-win-x64.exe
+          asset_content_type: application/octet-stream
+
+      - name: Upload Release Assets macOS
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.release.outputs.upload_url }}
+          asset_path: ./dist/NB Music-v${{ github.ref_name }}-mac-universal.dmg
+          asset_name: NB-Music-v${{ github.ref_name }}-mac-universal.dmg
+          asset_content_type: application/octet-stream
+
+      - name: Upload Release Assets Linux AppImage
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.release.outputs.upload_url }}
+          asset_path: ./dist/NB Music-v${{ github.ref_name }}-linux-x64.AppImage
+          asset_name: NB-Music-v${{ github.ref_name }}-linux-x64.AppImage
+          asset_content_type: application/octet-stream
+
+      - name: Upload Release Assets Linux DEB
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.release.outputs.upload_url }}
+          asset_path: ./dist/nb_music_${{ github.ref_name }}_amd64.deb
+          asset_name: nb_music_${{ github.ref_name }}_amd64.deb
+          asset_content_type: application/octet-stream
