@@ -3,139 +3,44 @@ name: Build and Release
 on:
   push:
     tags:
-      - 'v*' 
+      - 'v*'
 
 jobs:
   release:
-    name: Create Release
-    runs-on: ubuntu-latest
-    outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
-    steps:
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
-
-  build:
-    name: Build (${{ matrix.os }})
-    needs: release
+    name: Build and Release Electron App
     runs-on: ${{ matrix.os }}
+
     strategy:
       matrix:
         os: [windows-latest, macos-latest, ubuntu-latest]
+
     steps:
-      - name: Checkout code
+      - name: Check out Git repository
         uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 18
           cache: 'yarn'
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Build Windows
+      - name: Build and Publish Windows App
         if: matrix.os == 'windows-latest'
         run: yarn build:win
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
-      - name: Build macOS
+      - name: Build and Publish macOS App
         if: matrix.os == 'macos-latest'
-        run: |
-          yarn add dmgbuild --dev
-          yarn electron-builder build --mac --universal
+        run: yarn electron-builder build --mac
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
-      - name: Build Linux
+      - name: Build and Publish Linux App
         if: matrix.os == 'ubuntu-latest'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libx11-dev libxkbfile-dev libsecret-1-dev libasound2-dev
-          yarn electron-builder build --linux
+        run: yarn electron-builder build --linux
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
-
-      - name: Upload Windows Artifacts
-        if: matrix.os == 'windows-latest'
-        uses: actions/upload-artifact@v4
-        with:
-          name: nb_music-windows
-          path: dist/*.exe
-
-      - name: Upload macOS Artifacts
-        if: matrix.os == 'macos-latest'
-        uses: actions/upload-artifact@v4
-        with:
-          name: nb_music-macos
-          path: |
-            dist/*.dmg
-            dist/*.zip
-
-      - name: Upload Linux Artifacts
-        if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v4
-        with:
-          name: nb_music-linux
-          path: |
-            dist/*.AppImage
-            dist/*.deb
-            
-      - name: List build artifacts
-        run: |
-          echo "Contents of ./dist directory:"
-          ls -la ./dist/
-        
-      - name: Upload Release Assets Windows
-        if: matrix.os == 'windows-latest'
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-        with:
-          upload_url: ${{ needs.release.outputs.upload_url }}
-          asset_path: ./dist/NB Music-${{ github.ref_name }}-win-x64.exe
-          asset_name: NB-Music-${{ github.ref_name }}-win-x64.exe
-          asset_content_type: application/octet-stream
-
-      - name: Upload Release Assets macOS
-        if: matrix.os == 'macos-latest'
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-        with:
-          upload_url: ${{ needs.release.outputs.upload_url }}
-          asset_path: ./dist/NB Music-${{ github.ref_name }}-mac-universal.dmg
-          asset_name: NB-Music-${{ github.ref_name }}-mac-universal.dmg
-          asset_content_type: application/octet-stream
-
-      - name: Upload Release Assets Linux AppImage
-        if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-        with:
-          upload_url: ${{ needs.release.outputs.upload_url }}
-          asset_path: ./dist/NB Music-${{ github.ref_name }}-linux-x64.AppImage
-          asset_name: NB-Music-${{ github.ref_name }}-linux-x64.AppImage
-          asset_content_type: application/octet-stream
-
-      - name: Upload Release Assets Linux DEB
-        if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-        with:
-          upload_url: ${{ needs.release.outputs.upload_url }}
-          asset_path: ./dist/nb_music_${{ github.ref_name }}_amd64.deb
-          asset_name: nb_music_${{ github.ref_name }}_amd64.deb
-          asset_content_type: application/octet-stream
