@@ -6,161 +6,63 @@ on:
       - 'v*'
 
 jobs:
-  release:
-    runs-on: ubuntu-latest
-    outputs:
-      release_id: ${{ steps.create_release.outputs.id }}
-    steps:
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: true
-          prerelease: false
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
 
-  build-windows:
-    needs: release
-    runs-on: windows-latest
     steps:
-      - name: Checkout code
+      - name: 检出代码
         uses: actions/checkout@v3
         with:
-          submodules: true
-          token: ${{ secrets.GH_TOKEN }}
-      
-      - name: Setup Git Credentials for Submodules
-        run: |
-          git config --global url."https://oauth2:${{ secrets.GITLAB_ACCESS_TOKEN }}@gitlab.com".insteadOf "https://gitlab.com"
-          
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-          cache: 'yarn'
-          
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-        
-      - name: Build Windows
-        run: yarn build:win
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          
-      - name: Upload Windows artifacts
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-        with:
-          upload_url: ${{ needs.release.outputs.release_id }}
-          asset_path: ./dist/*.exe
-          asset_name: NB-Music-Windows.exe
-          asset_content_type: application/octet-stream
-          
-  build-linux:
-    needs: release
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          submodules: true
-          token: ${{ secrets.GH_TOKEN }}
-      
-      - name: Setup Git Credentials for Submodules
-        run: |
-          git config --global url."https://oauth2:${{ secrets.GITLAB_ACCESS_TOKEN }}@gitlab.com".insteadOf "https://gitlab.com"
-          
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-          cache: 'yarn'
-          
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-        
-      # 添加文件权限修改步骤
-      - name: Set correct permissions
-        run: |
-          mkdir -p ./dist
-          chmod -R 777 ./dist || true
-        
-      - name: Build Linux
-        run: yarn electron-builder --linux
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          
-      # 构建后修复权限以便清理
-      - name: Fix permissions after build
-        if: always()
-        run: |
-          sudo chown -R $(whoami):$(id -g) ./dist || true
-          sudo chmod -R 777 ./dist || true
-          
-      - name: Upload Linux artifacts
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-        with:
-          upload_url: ${{ needs.release.outputs.release_id }}
-          asset_path: ./dist/*.AppImage
-          asset_name: NB-Music-Linux.AppImage
-          asset_content_type: application/octet-stream
-          
-  build-macos:
-    needs: release
-    runs-on: macos-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          submodules: true
-          token: ${{ secrets.GH_TOKEN }}
-      
-      - name: Setup Git Credentials for Submodules
-        run: |
-          git config --global url."https://oauth2:${{ secrets.GITLAB_ACCESS_TOKEN }}@gitlab.com".insteadOf "https://gitlab.com"
-          
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-          cache: 'yarn'
-          
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-        
-      - name: Build macOS
-        run: yarn electron-builder --mac
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          
-      - name: Upload macOS artifacts
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-        with:
-          upload_url: ${{ needs.release.outputs.release_id }}
-          asset_path: ./dist/*.dmg
-          asset_name: NB-Music-macOS.dmg
-          asset_content_type: application/octet-stream
+          submodules: recursive
 
-  publish-release:
-    needs: [release, build-windows, build-linux, build-macos]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Publish Release
-        uses: actions/github-script@v6
+      - name: 设置 Node.js
+        uses: actions/setup-node@v3
         with:
-          github-token: ${{ secrets.GH_TOKEN }}
-          script: |
-            github.rest.repos.updateRelease({
-              release_id: ${{ needs.release.outputs.release_id }},
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              draft: false
-            })
+          node-version: 18
+          cache: 'yarn'
+
+      - name: 安装依赖
+        run: yarn install --frozen-lockfile
+
+      - name: 安装 Linux 构建依赖
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpng-dev libxkbfile-dev xz-utils libx11-dev libxtst-dev
+
+      - name: 构建应用
+        run: yarn build
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: 上传 Windows 构建产物
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v3
+        with:
+          name: win-artifacts
+          path: |
+            dist/*.exe
+            dist/latest.yml
+
+      - name: 上传 macOS 构建产物
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-artifact@v3
+        with:
+          name: mac-artifacts
+          path: |
+            dist/*.dmg
+            dist/latest-mac.yml
+
+      - name: 上传 Linux 构建产物
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v3
+        with:
+          name: linux-artifacts
+          path: |
+            dist/*.AppImage
+            dist/*.deb
+            dist/latest-linux.yml
