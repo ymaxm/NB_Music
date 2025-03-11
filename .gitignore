@@ -13,3 +13,6 @@ Thumbs.db
 
 # 忽略环境变量配置
 .env
+
+# 忽略更新用的快捷脚本
+update.bat
