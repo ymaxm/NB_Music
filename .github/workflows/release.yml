@@ -51,7 +51,9 @@ jobs:
 
       - name: Build macOS
         if: matrix.os == 'macos-latest'
-        run: yarn electron-builder build --mac
+        run: |
+          yarn add dmgbuild --dev
+          yarn electron-builder build --mac --universal
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
@@ -105,26 +107,15 @@ jobs:
           asset_name: NB-Music-${{ github.ref_name }}-win-x64.exe
           asset_content_type: application/octet-stream
 
-      - name: Upload Release Assets macOS ARM64
+      - name: Upload Release Assets macOS
         if: matrix.os == 'macos-latest'
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           upload_url: ${{ needs.release.outputs.upload_url }}
-          asset_path: ./dist/nb_music-${{ github.ref_name }}-mac-arm64.dmg
-          asset_name: NB-Music-${{ github.ref_name }}-mac-arm64.dmg
-          asset_content_type: application/octet-stream
-
-      - name: Upload Release Assets macOS x64
-        if: matrix.os == 'macos-latest'
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-        with:
-          upload_url: ${{ needs.release.outputs.upload_url }}
-          asset_path: ./dist/nb_music-${{ github.ref_name }}-mac-x64.dmg
-          asset_name: NB-Music-${{ github.ref_name }}-mac-x64.dmg
+          asset_path: ./dist/NB Music-${{ github.ref_name }}-mac-universal.dmg
+          asset_name: NB-Music-${{ github.ref_name }}-mac-universal.dmg
           asset_content_type: application/octet-stream
 
       - name: Upload Release Assets Linux AppImage
