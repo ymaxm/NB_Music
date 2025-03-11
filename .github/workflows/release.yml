@@ -15,8 +15,9 @@ jobs:
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
-          token: ${{ secrets.GH_TOKEN }}
           tag_name: ${{ github.ref }}
           release_name: Release ${{ github.ref }}
           draft: false
@@ -91,39 +92,43 @@ jobs:
       - name: Upload Release Assets Windows
         if: matrix.os == 'windows-latest'
         uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           upload_url: ${{ needs.release.outputs.upload_url }}
           asset_path: ./dist/NB Music-v${{ github.ref_name }}-win-x64.exe
           asset_name: NB-Music-v${{ github.ref_name }}-win-x64.exe
           asset_content_type: application/octet-stream
-          token: ${{ secrets.GH_TOKEN }}
 
       - name: Upload Release Assets macOS
         if: matrix.os == 'macos-latest'
         uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           upload_url: ${{ needs.release.outputs.upload_url }}
           asset_path: ./dist/NB Music-v${{ github.ref_name }}-mac-universal.dmg
           asset_name: NB-Music-v${{ github.ref_name }}-mac-universal.dmg
           asset_content_type: application/octet-stream
-          token: ${{ secrets.GH_TOKEN }}
 
       - name: Upload Release Assets Linux AppImage
         if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           upload_url: ${{ needs.release.outputs.upload_url }}
           asset_path: ./dist/NB Music-v${{ github.ref_name }}-linux-x64.AppImage
           asset_name: NB-Music-v${{ github.ref_name }}-linux-x64.AppImage
           asset_content_type: application/octet-stream
-          token: ${{ secrets.GH_TOKEN }}
 
       - name: Upload Release Assets Linux DEB
         if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           upload_url: ${{ needs.release.outputs.upload_url }}
           asset_path: ./dist/nb_music_${{ github.ref_name }}_amd64.deb
           asset_name: nb_music_${{ github.ref_name }}_amd64.deb
           asset_content_type: application/octet-stream
-          token: ${{ secrets.GH_TOKEN }}
