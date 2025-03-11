@@ -88,7 +88,12 @@ jobs:
           path: |
             dist/*.AppImage
             dist/*.deb
-
+            
+      - name: List build artifacts
+        run: |
+          echo "Contents of ./dist directory:"
+          ls -la ./dist/
+        
       - name: Upload Release Assets Windows
         if: matrix.os == 'windows-latest'
         uses: actions/upload-release-asset@v1
@@ -96,8 +101,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           upload_url: ${{ needs.release.outputs.upload_url }}
-          asset_path: ./dist/NB Music-v${{ github.ref_name }}-win-x64.exe
-          asset_name: NB-Music-v${{ github.ref_name }}-win-x64.exe
+          asset_path: ./dist/NB Music-${{ github.ref_name }}-win-x64.exe
+          asset_name: NB-Music-${{ github.ref_name }}-win-x64.exe
           asset_content_type: application/octet-stream
 
       - name: Upload Release Assets macOS
@@ -107,8 +112,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           upload_url: ${{ needs.release.outputs.upload_url }}
-          asset_path: ./dist/NB Music-v${{ github.ref_name }}-mac-universal.dmg
-          asset_name: NB-Music-v${{ github.ref_name }}-mac-universal.dmg
+          asset_path: ./dist/NB Music-${{ github.ref_name }}-mac-universal.dmg
+          asset_name: NB-Music-${{ github.ref_name }}-mac-universal.dmg
           asset_content_type: application/octet-stream
 
       - name: Upload Release Assets Linux AppImage
@@ -118,8 +123,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           upload_url: ${{ needs.release.outputs.upload_url }}
-          asset_path: ./dist/NB Music-v${{ github.ref_name }}-linux-x64.AppImage
-          asset_name: NB-Music-v${{ github.ref_name }}-linux-x64.AppImage
+          asset_path: ./dist/NB Music-${{ github.ref_name }}-linux-x64.AppImage
+          asset_name: NB-Music-${{ github.ref_name }}-linux-x64.AppImage
           asset_content_type: application/octet-stream
 
       - name: Upload Release Assets Linux DEB
