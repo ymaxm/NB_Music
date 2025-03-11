@@ -27,20 +27,79 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Build and Publish Windows App
+      # 创建Release
+      - name: Create Release
+        id: create_release
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+      # Windows构建
+      - name: Build Windows App
         if: matrix.os == 'windows-latest'
         run: yarn build:win
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
-      - name: Build and Publish macOS App
+      # macOS构建
+      - name: Build macOS App
         if: matrix.os == 'macos-latest'
         run: yarn electron-builder build --mac
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
-      - name: Build and Publish Linux App
+      # Linux构建
+      - name: Build Linux App
         if: matrix.os == 'ubuntu-latest'
         run: yarn electron-builder build --linux
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      # 将生成的文件作为artifacts上传
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nb_music-${{ matrix.os }}
+          path: dist/**/*
+
+      # 上传Windows版本到Release
+      - name: Upload Windows Release Asset
+        if: matrix.os == 'windows-latest'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/*.exe
+            dist/*.exe.blockmap
+            dist/latest.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      # 上传macOS版本到Release
+      - name: Upload macOS Release Asset
+        if: matrix.os == 'macos-latest'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/*.dmg
+            dist/*.dmg.blockmap
+            dist/latest-mac.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      # 上传Linux版本到Release
+      - name: Upload Linux Release Asset
+        if: matrix.os == 'ubuntu-latest'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/*.AppImage
+            dist/*.deb
+            dist/latest-linux.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
