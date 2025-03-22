@@ -93,6 +93,7 @@
   background-clip: text;
   -webkit-text-fill-color: transparent;
   filter: saturate(130%) brightness(1.1);
+  margin-right: 4px;
 }
 
 #function-list a {
