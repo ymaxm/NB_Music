@@ -18,7 +18,8 @@ class SettingManager {
             primaryColor: SettingManager.DEFAULT_PRIMARY_COLOR, // 默认主色
             secondaryColor: SettingManager.DEFAULT_SECONDARY_COLOR, // 默认次色
             micaOpacity: SettingManager.DEFAULT_MICA_OPACITY, // 默认Mica透明度
-            videoQuality: 64 // 新增：背景视频清晰度，默认720P
+            videoQuality: 64, // 新增：背景视频清晰度，默认720P
+            hideSidebar: false
         };
         this.listeners = new Map();
         this.STORAGE_KEY = 'app_settings';

@@ -482,8 +482,9 @@ class UIManager {
         });
 
         // 侧边栏点击事件
-        document.addEventListener("click", (event) => {
-            if (!event.target.closest(".sidebar") && !event.target.closest(".dock.sidebar")) {
+        document.addEventListener("dblclick", (event) => {
+            if (!event.target.closest(".sidebar") && !event.target.closest(".dock.sidebar")
+                 && this.settingManager.getSetting('hideSidebar')=="true") {
                 document.querySelector(".sidebar").classList.add("hide");
             }
         });
