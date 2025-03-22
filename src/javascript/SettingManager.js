@@ -117,8 +117,6 @@ class SettingManager {
         // 初始化颜色选择器的值
         const primaryColorPicker = document.getElementById('primaryColor');
         const secondaryColorPicker = document.getElementById('secondaryColor');
-        const micaOpacitySlider = document.getElementById('micaOpacity');
-        const opacityValueDisplay = document.getElementById('opacityValue');
 
         if (primaryColorPicker) {
             primaryColorPicker.value = this.settings.primaryColor;
@@ -133,18 +131,6 @@ class SettingManager {
             secondaryColorPicker.addEventListener('change', (e) => {
                 this.setSetting('secondaryColor', e.target.value);
                 this.applyThemeColors();
-            });
-        }
-
-        if (micaOpacitySlider) {
-            micaOpacitySlider.value = this.settings.micaOpacity;
-            opacityValueDisplay.textContent = `${Math.round(this.settings.micaOpacity * 100)}%`;
-            
-            micaOpacitySlider.addEventListener('input', (e) => {
-                const value = parseFloat(e.target.value);
-                opacityValueDisplay.textContent = `${Math.round(value * 100)}%`;
-                this.setSetting('micaOpacity', value);
-                this.applyMicaOpacity();
             });
         }
 
@@ -167,29 +153,45 @@ class SettingManager {
                 this.showNotification('主题颜色已重置', 'success');
             });
         }
-        
-        // 重置Mica透明度按钮
-        const resetMicaOpacityBtn = document.getElementById('resetMicaOpacity');
-        if (resetMicaOpacityBtn) {
-            resetMicaOpacityBtn.addEventListener('click', () => {
-                // 重置为默认值
-                this.setSetting('micaOpacity', SettingManager.DEFAULT_MICA_OPACITY);
-                
-                // 更新UI
-                if (micaOpacitySlider) micaOpacitySlider.value = SettingManager.DEFAULT_MICA_OPACITY;
-                if (opacityValueDisplay) opacityValueDisplay.textContent = `${Math.round(SettingManager.DEFAULT_MICA_OPACITY * 100)}%`;
-                
-                // 应用更改
-                this.applyMicaOpacity();
-                
-                // 显示通知
-                this.showNotification('透明度已重置', 'success');
-            });
-        }
+
+        this.sliderSetting('micaOpacity', '50%', "透明度已重置", (value) => `${Math.round(value * 100)}%`, () => this.applyMicaOpacity())
 
         // 初始应用主题色和透明度
         this.applyThemeColors();
         this.applyMicaOpacity();
+    }
+
+    sliderSetting(id, defaultValue, resetText, value2display, afterValueApply) {
+        const slider = document.getElementById(id);
+        const value = document.getElementById(id + "Value");
+        const reset = document.getElementById(id + "Reset");
+
+        if (slider) {
+            slider.value = this.settings[id];
+            value.textContent = value2display(this.settings[id]);
+
+            slider.addEventListener('input', (e) => {
+                const v = parseFloat(e.target.value);
+                value.textContent = value2display(v);
+                this.setSetting(id, v);
+                afterValueApply();
+            });
+        }
+        if (reset) {
+            reset.addEventListener('click', () => {
+                this.setSetting(id, defaultValue);
+
+                // 更新UI
+                if (slider) slider.value = defaultValue;
+                if (value) value.textContent = value2display(defaultValue);
+
+                // 应用更改
+                afterValueApply();
+
+                // 显示通知
+                this.showNotification(resetText, 'success');
+            });
+        }
     }
 
     applyThemeColors() {
