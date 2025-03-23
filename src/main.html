@@ -15,17 +15,17 @@
                 <p>NB Music</p>
             </div>
 
-            <div class="search">
+            <div class="search fadein">
                 <input class="input search-music" type="text" placeholder="搜索音乐" />
             </div>
-            <div class="login-btn">
+            <div class="login-btn fadein">
                 <i class="bi bi-person-circle"></i>
                 <span>登录Bilibili</span>
             </div>
             <div>
-                <a class="a wbtg" id="minimize" onclick=""><i class="bi bi-dash-lg"></i></a>
-                <a class="a wbtg max" id="maximize" onclick=""><i class="bi bi-app"></i></a>
-                <a class="a wbtg red" id="close" onclick=""><i class="bi bi-x-lg"></i></a>
+                <a class="a wbtg fadein" id="minimize" onclick=""><i class="bi bi-dash-lg"></i></a>
+                <a class="a wbtg max fadein" id="maximize" onclick=""><i class="bi bi-app"></i></a>
+                <a class="a wbtg red fadein" id="close" onclick=""><i class="bi bi-x-lg"></i></a>
             </div>
         </div>
         <div class="loading" style="display: none">
@@ -282,7 +282,7 @@
                     </g>
                 </svg>
             </div>
-            <div class="sidebar" style="display: flex !important; flex-direction: column; height: 100%">
+            <div class="sidebar fadein" style="display: flex !important; flex-direction: column; height: 100%">
                 <list class="list focs" id="function-list">
                     <a class="player check" data-page=".player"><i class="bi bi-music-player"></i>&nbsp;播放</a>
                     <a class="love-list" data-page=".love-list"><i class="bi bi-heart"></i>&nbsp;收藏</a>
@@ -494,21 +494,36 @@
                                     </nav>
                                 </div>
                             </div>
-            <div class="setting-item">
-              <div class="setting-info">
-                <i class="bi bi-layout-sidebar"></i>
-                <div class="words">
-                  <div class="setting-name">双击隐藏侧边栏</div>
-                  <div class="setting-descrition">光标在侧边栏外双击隐藏侧边栏</div>
-                </div>
-              </div>
-              <div class="setting-value">
-                <nav data-nav-id="nav-sidebar-fade">
-                  <a  data-key="hideSidebar" data-value="true">启用</a>
-                  <a data-key="hideSidebar" data-value="false" class="active">禁用</a>
-                </nav>
-              </div>
-            </div>
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <i class="bi bi-layout-sidebar"></i>
+                                    <div class="words">
+                                        <div class="setting-name">双击隐藏侧边栏</div>
+                                        <div class="setting-descrition">光标在侧边栏外双击隐藏侧边栏</div>
+                                    </div>
+                                </div>
+                                <div class="setting-value">
+                                    <nav data-nav-id="nav-sidebar-fade">
+                                        <a  data-key="hideSidebar" data-value="true">启用</a>
+                                        <a data-key="hideSidebar" data-value="false" class="active">禁用</a>
+                                    </nav>
+                                </div>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <i class="bi bi-window-fullscreen"></i>
+                                    <div class="words">
+                                        <div class="setting-name">双击隐藏顶栏</div>
+                                        <div class="setting-descrition">光标在顶栏外双击隐藏顶栏</div>
+                                    </div>
+                                </div>
+                                <div class="setting-value">
+                                    <nav data-nav-id="nav-titbar-fade">
+                                        <a  data-key="hideTitbar" data-value="true">启用</a>
+                                        <a data-key="hideTitbar" data-value="false" class="active">禁用</a>
+                                    </nav>
+                                </div>
+                            </div>
                             <!-- 主题色选择器 -->
                             <div class="setting-item">
                                 <div class="setting-info">

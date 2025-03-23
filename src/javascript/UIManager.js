@@ -492,12 +492,19 @@ class UIManager {
         document.addEventListener("dblclick", (event) => {
             if (!event.target.closest(".sidebar") && !event.target.closest(".dock.sidebar")
                  && this.settingManager.getSetting('hideSidebar')=="true") {
-                document.querySelector(".sidebar").classList.add("hide");
+                document.querySelector(".sidebar").classList.add("fadeout");
+            }
+            if (!event.target.closest(".titbar") && this.settingManager.getSetting('hideTitbar')=="true") {
+               document.querySelectorAll(".titbar .fadein").forEach((fadeItem) => {
+                fadeItem.classList.add("fadeout");
+               })
             }
         });
 
-        document.querySelector(".sidebar").addEventListener("mouseover", () => {
-            document.querySelector(".sidebar").classList.remove("hide");
+        document.querySelectorAll(".fadein").forEach((fadeItem) => {
+            fadeItem.addEventListener("mouseover", () => {
+                fadeItem.classList.remove("fadeout");
+            })
         });
 
         // 列表焦点效果
