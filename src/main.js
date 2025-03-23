@@ -436,6 +436,18 @@ app.on('before-quit', () => {
     app.isQuitting = true;
 });
 
+app.on("activate", () => {
+    if (global.mainWindow) {
+        if (!global.mainWindow.isVisible()) {
+            global.mainWindow.show();
+        }
+        if (global.mainWindow.isMinimized()) {
+            global.mainWindow.restore();
+        }
+        global.mainWindow.focus();
+    }
+});
+
 function setupIPC() {
     ipcMain.handle('get-app-version', () => {
         return app.getVersion();
