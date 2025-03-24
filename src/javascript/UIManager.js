@@ -510,15 +510,16 @@ class UIManager {
         });
 
         // 专为侧边栏设计
-        if (this.settingManager.getSetting("hideSidebar") == "true") {
-            window.addEventListener("mousemove", (e) => {
+
+        window.addEventListener("mousemove", (e) => {
+            if (this.settingManager.getSetting("hideSidebar") == "true") {
                 if (e.clientX < 260 && document.querySelector(".sidebar").style.opacity == "0") {
                     document.querySelector(".sidebar").style.transition = "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s cubic-bezier(0.88, 0.01, 0.95, 0.09)";
                     document.querySelector(".sidebar").parentElement.style.gridTemplateColumns = "260px auto";
                     document.querySelector(".sidebar").style.opacity = "1";
                 }
-            });
-        }
+            }
+        });
 
         // 列表焦点效果
         document.querySelectorAll("#function-list").forEach((list) => {
