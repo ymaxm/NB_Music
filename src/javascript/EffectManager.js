@@ -35,9 +35,6 @@ class EffectManager {
                 canvasCtx.fillRect(x - i * 2 * sliceWidth, canvas.height - v, sliceWidth - 3, v);
                 x += sliceWidth;
             }
-
-            canvasCtx.lineTo(canvas.width, canvas.height / 2);
-            canvasCtx.stroke();
             window.requestAnimationFrame(draw);
         }
 
