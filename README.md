@@ -69,7 +69,8 @@
 │   │   ├──  UIManager.js         # UI管理器
 │   │   ├──  UpdateManager.js     # 更新管理器
 │   ├──  main.html                # 主要HTML文件
-│   ├──  main.js                  # 主要JavaScript文件
+│   ├──  main.js                # 主要JavaScript文件
+│   ├──  mobile.js                # 手机适配js文件
 │   ├──  script.js                # 辅助脚本
 │   ├──  splash.html              # 启动画面HTML
 │   ├──  styles/                  # 样式文件夹
@@ -83,6 +84,7 @@
 │   │   │   ├──  notifications.css # 通知样式
 │   │   │   ├──  player.css       # 播放器样式
 │   │   │   ├──  settings.css     # 设置样式
+│   │   │   ├──  mobile.css     # 手机适配样式
 │   │   │   ├──  sidebar.css      # 侧边栏样式
 │   │   │   ├──  song.css         # 歌曲样式
 │   │   │   ├──  titlebar.css     # 标题栏样式

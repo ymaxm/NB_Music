@@ -513,3 +513,12 @@
     });
 
 })();
+
+// 添加封面点击事件
+const coverImage = document.querySelector('.player-cover');
+const lyricsContainer = document.getElementById('lyrics-container');
+
+coverImage?.addEventListener('click', () => {
+  lyricsContainer.classList.toggle('lyrics-visible');
+  document.querySelector('.player-content').classList.toggle('lyrics-hidden');
+});

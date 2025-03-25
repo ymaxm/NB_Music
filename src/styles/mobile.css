@@ -114,6 +114,16 @@
     body.mobile-view #lyrics-container {
         z-index: 1;
         transform: translateX(100%);
+        opacity: 0;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+        pointer-events: none;
+
+        &.lyrics-visible {
+            transform: translateX(0);
+            opacity: 1;
+            pointer-events: auto;
+            z-index: 3;
+        }
     }
 
     /* 非活动视图移出屏幕 */
@@ -130,7 +140,7 @@
     }
 
     body.mobile-view .player.show-lyrics #lyrics-container {
-        transform: translateX(0);
+        transform: translateX(0) !important;
     }
 
     /* 增强滑动视觉反馈 */
@@ -179,8 +189,6 @@
         width: 16px;
         border-radius: 4px;
     }
-
-    /* 删除之前添加的复杂样式 */
 
     /* 滑动提示动画 */
     .swipe-hint {
