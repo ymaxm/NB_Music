@@ -146,6 +146,10 @@ class SettingManager {
             // 对于videoQuality，需要转换为数字
             case "videoQuality":
                 return parseInt(value);
+            // 字体
+            case "fontFamilyCustom":
+            case "fontFamilyFallback":
+                return value.trim();
             // 其他不变
             default:
                 return value;
@@ -251,7 +255,9 @@ class SettingManager {
 
     applyFontFamily() {
         const root = document.documentElement;
-        root.style.setProperty("--font-family-custom", this.settings.fontFamilyCustom);
+        let c = this.settings.fontFamilyCustom;
+        if (typeof c === "string" && c.trim().length > 0) c = `${c}, `;
+        root.style.setProperty("--font-family-custom", c);
         root.style.setProperty("--font-family-fallback", this.settings.fontFamilyFallback);
     }
 
