@@ -29,7 +29,6 @@ class SettingManager {
         this.listeners = new Map();
         this.STORAGE_KEY = "app_settings";
         this.loadSettings();
-        this.fixSettingsValue();
         this.setupSettingListeners();
         this.setupAboutLinks();
         this.setAppVersion();
@@ -41,7 +40,10 @@ class SettingManager {
         try {
             const savedSettings = localStorage.getItem(this.STORAGE_KEY);
             if (savedSettings) {
-                this.settings = JSON.parse(savedSettings);
+                const ss = JSON.parse(savedSettings);
+                for (const key in ss)
+                    if (Object.prototype.hasOwnProperty.call(ss, key))
+                        this.settings[key] = ss[key];
             }
         } catch (error) {
             console.error("加载设置失败:", error);
@@ -96,8 +98,7 @@ class SettingManager {
                 const key = e.target.getAttribute("data-key");
                 const value = e.target.getAttribute("data-value");
 
-                // 对于videoQuality，需要转换为数字
-                const finalValue = key === "videoQuality" ? parseInt(value) : value;
+                const finalValue = this.processSettingValue(key, value);
 
                 // 更新UI
                 const navParent = e.target.parentElement;
@@ -121,11 +122,13 @@ class SettingManager {
                 const key = e.target.getAttribute("data-key");
                 const value = e.target.value;
 
+                const finalValue = this.processSettingValue(key, value);
+
                 // 保存设置
-                this.setSetting(key, value);
+                this.setSetting(key, finalValue);
 
                 // 应用设置
-                this.applySettingChange(key, value);
+                this.applySettingChange(key, finalValue);
             });
         });
 
@@ -135,6 +138,17 @@ class SettingManager {
             clearCacheBtn.addEventListener("click", () => {
                 this.clearCache();
             });
+        }
+    }
+
+    processSettingValue(key, value) {
+        switch (key) {
+            // 对于videoQuality，需要转换为数字
+            case "videoQuality":
+                return parseInt(value);
+            // 其他不变
+            default:
+                return value;
         }
     }
 
@@ -241,12 +255,6 @@ class SettingManager {
         root.style.setProperty("--font-family-fallback", this.settings.fontFamilyFallback);
     }
 
-    // 这里神秘小代码发力了 不知道为什么
-    fixSettingsValue() {
-        if (this.settings.fontFamilyCustom === "undefined" || typeof this.settings.fontFamilyCustom !== "string") this.settings.fontFamilyCustom = SettingManager.DEFAULT_FONT_FAMILY_CUSTOM;
-        if (this.settings.fontFamilyFallback === "undefined" || typeof this.settings.fontFamilyFallback !== "string") this.settings.fontFamilyFallback = SettingManager.DEFAULT_FONT_FAMILY_FALLBACK;
-    }
-
     applySettingChange(key, value) {
         switch (key) {
             case "theme":
@@ -309,13 +317,13 @@ class SettingManager {
 
         // 切换背景类型
         switch (type) {
-            case "none":
+            case "none": {
                 // 移除视频背景
                 this.cleanupVideoBackgrounds();
                 document.querySelector("html").style.removeProperty("--bgul");
                 break;
-
-            case "cover":
+            }
+            case "cover": {
                 // 移除视频背景，设置封面背景
                 this.cleanupVideoBackgrounds();
                 const coverSong = getSongInfo();
@@ -323,8 +331,8 @@ class SettingManager {
                     document.querySelector("html").style.setProperty("--bgul", `url(${coverSong.poster})`);
                 }
                 break;
-
-            case "video":
+            }
+            case "video": {
                 // 设置视频背景
                 const currentSong = getSongInfo();
                 const currentTime = getCurrentAudioTime();
@@ -381,6 +389,7 @@ class SettingManager {
                     document.querySelector("body").appendChild(video);
                 }
                 break;
+            }
         }
     }
 
