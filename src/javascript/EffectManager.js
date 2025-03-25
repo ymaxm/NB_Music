@@ -4,7 +4,6 @@ class EffectManager {
         this.settingManager = settingManager;
         this.audioContext = new AudioContext();
         this.mediaSource = this.audioContext.createMediaElementSource(audioPlayer.audio);
-        this.mediaSource.connect(this.audioContext.destination);
 
         this.initializeAnalyzer();
     }
