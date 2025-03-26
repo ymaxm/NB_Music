@@ -12,11 +12,90 @@ class LyricsPlayer {
         this.settingManager = settingManager;
         this.activeLineIndex = -1;
         this.previousActiveIndex = -1;
+        this.desktopLyricsEnabled = false;
+        this.currentSongInfo = null;
+        this.ipcRenderer = null;
+        
+        // 检查是否在Electron环境中
+        if (typeof require !== 'undefined') {
+            try {
+                const { ipcRenderer } = require('electron');
+                this.ipcRenderer = ipcRenderer;
+                
+                // 监听桌面歌词状态变化
+                this.ipcRenderer.on('desktop-lyrics-closed', () => {
+                    this.desktopLyricsEnabled = false;
+                    this.updateDesktopLyricsButton();
+                });
+                
+                this.ipcRenderer.on('desktop-lyrics-ready', () => {
+                    this.desktopLyricsEnabled = true;
+                    this.updateDesktopLyricsButton();
+                    this.syncDesktopLyrics();
+                });
+                
+                // 监听主窗口最小化事件
+                this.ipcRenderer.on('window-minimized', () => {
+                    this.isWindowMinimized = true;
+                    // 立即同步一次，确保歌词是最新的
+                    if (this.desktopLyricsEnabled) {
+                        this.syncDesktopLyrics();
+                        // 启动后台同步机制
+                        this.startBackgroundSync();
+                    }
+                });
+                
+                this.ipcRenderer.on('window-restored', () => {
+                    this.isWindowMinimized = false;
+                    // 停止后台同步
+                    this.stopBackgroundSync();
+                });
+                
+                // 响应主进程请求同步歌词
+                this.ipcRenderer.on('request-lyrics-sync', () => {
+                    if (this.desktopLyricsEnabled) {
+                        this.syncDesktopLyrics();
+                    }
+                });
+                
+                // 响应桌面歌词发送的控制命令
+                this.ipcRenderer.on('desktop-lyrics-control', (_, command, data) => {
+                    if (command === 'toggle-play') {
+                        // 切换播放/暂停
+                        if (this.audio.paused) {
+                            this.audio.play();
+                        } else {
+                            this.audio.pause();
+                        }
+                    } else if (command === 'seek' && typeof data === 'number') {
+                        // 跳转到指定时间
+                        if (!isNaN(data) && this.audio.duration) {
+                            this.audio.currentTime = Math.max(0, Math.min(data, this.audio.duration));
+                        }
+                    }
+                });
+                
+                // 检查桌面歌词设置
+                this.desktopLyricsEnabled = this.settingManager.getSetting('desktopLyricsEnabled') === 'true';
+                if (this.desktopLyricsEnabled) {
+                    this.ipcRenderer.send('toggle-desktop-lyrics', true);
+                }
+            } catch (error) {
+                console.error('初始化IPC失败:', error);
+            }
+        }
+
+        // 初始化后台同步定时器
+        this.backgroundSyncInterval = null;
+        this.isWindowMinimized = false;
 
         // 创建滚动容器
         this.scrollWrapper = document.createElement("div");
         this.scrollWrapper.className = "lyrics-scroll-wrapper";
         this.lyricsContainer.appendChild(this.scrollWrapper);
+
+        // 添加桌面歌词切换按钮
+        this.addDesktopLyricsToggle();
 
         // 绑定audio事件
         this.audio.addEventListener("play", () => this.start());
@@ -158,6 +237,11 @@ class LyricsPlayer {
                 this.refreshLayout();
             }
         }, 50);
+        
+        // 同步桌面歌词
+        if (this.desktopLyricsEnabled) {
+            this.syncDesktopLyrics();
+        }
         
         if (!this.audio.paused) {
             this.start();
@@ -388,10 +472,22 @@ class LyricsPlayer {
                 
                 // 标记至少有一行被激活过，从初始视图切换到动态视图
                 this.hadActiveLines = true;
+                
+                // 同步桌面歌词显示
+                if (this.desktopLyricsEnabled) {
+                    this.syncDesktopLyrics();
+                }
             }
             
             // 调用更新行位置方法
             this.updateLinePositions(activeLineFound, anyCharActive);
+        }
+
+        // 如果主窗口最小化且有桌面歌词，确保继续同步
+        if (this.isWindowMinimized && this.desktopLyricsEnabled && 
+            effectiveActiveIndex !== null && effectiveActiveIndex !== this.lastSyncedIndex) {
+            this.syncDesktopLyrics();
+            this.lastSyncedIndex = effectiveActiveIndex;
         }
 
         // 保存animationFrame引用以便能够取消它
@@ -599,6 +695,299 @@ class LyricsPlayer {
         // 如果音频正在播放但动画没有运行，则重新启动动画
         if (!this.audio.paused && !this.animationFrame) {
             this.start();
+        }
+    }
+
+    // 添加桌面歌词切换按钮
+    addDesktopLyricsToggle() {
+        const toggleBtn = document.createElement('button');
+        toggleBtn.className = 'desktop-lyrics-toggle';
+        toggleBtn.title = '桌面歌词';
+        toggleBtn.innerHTML = '<i class="bi bi-display"></i>';
+        
+        if (this.desktopLyricsEnabled) {
+            toggleBtn.classList.add('active');
+        }
+        
+        toggleBtn.addEventListener('click', () => {
+            this.toggleDesktopLyrics();
+        });
+        
+        this.lyricsContainer.appendChild(toggleBtn);
+        this.desktopLyricsToggle = toggleBtn;
+        
+        // 添加桌面歌词设置面板
+        this.addDesktopLyricsSettings();
+    }
+    
+    // 添加桌面歌词设置面板
+    addDesktopLyricsSettings() {
+        const settingsPanel = document.createElement('div');
+        settingsPanel.className = 'desktop-lyrics-settings';
+        
+        const fontSizeItem = document.createElement('div');
+        fontSizeItem.className = 'setting-item';
+        
+        const fontSizeTitle = document.createElement('div');
+        fontSizeTitle.className = 'setting-title';
+        fontSizeTitle.textContent = '字体大小';
+        
+        const fontSizeSliderContainer = document.createElement('div');
+        fontSizeSliderContainer.className = 'slider-container';
+        
+        const fontSizeSlider = document.createElement('input');
+        fontSizeSlider.type = 'range';
+        fontSizeSlider.className = 'slider';
+        fontSizeSlider.min = '16';
+        fontSizeSlider.max = '48';
+        fontSizeSlider.step = '1';
+        fontSizeSlider.value = this.settingManager.getSetting('desktopLyricsFontSize') || '28';
+        
+        const fontSizeValue = document.createElement('div');
+        fontSizeValue.className = 'slider-value';
+        fontSizeValue.textContent = fontSizeSlider.value + 'px';
+        
+        fontSizeSlider.addEventListener('input', () => {
+            fontSizeValue.textContent = fontSizeSlider.value + 'px';
+            this.settingManager.setSetting('desktopLyricsFontSize', fontSizeSlider.value);
+            this.updateDesktopLyricsStyle();
+        });
+        
+        fontSizeSliderContainer.appendChild(fontSizeSlider);
+        fontSizeSliderContainer.appendChild(fontSizeValue);
+        
+        fontSizeItem.appendChild(fontSizeTitle);
+        fontSizeItem.appendChild(fontSizeSliderContainer);
+        
+        // 透明度设置
+        const opacityItem = document.createElement('div');
+        opacityItem.className = 'setting-item';
+        
+        const opacityTitle = document.createElement('div');
+        opacityTitle.className = 'setting-title';
+        opacityTitle.textContent = '背景透明度';
+        
+        const opacitySliderContainer = document.createElement('div');
+        opacitySliderContainer.className = 'slider-container';
+        
+        const opacitySlider = document.createElement('input');
+        opacitySlider.type = 'range';
+        opacitySlider.className = 'slider';
+        opacitySlider.min = '0';
+        opacitySlider.max = '100';
+        opacitySlider.step = '5';
+        opacitySlider.value = this.settingManager.getSetting('desktopLyricsOpacity') || '50';
+        
+        const opacityValue = document.createElement('div');
+        opacityValue.className = 'slider-value';
+        opacityValue.textContent = opacitySlider.value + '%';
+        
+        opacitySlider.addEventListener('input', () => {
+            opacityValue.textContent = opacitySlider.value + '%';
+            this.settingManager.setSetting('desktopLyricsOpacity', opacitySlider.value);
+            this.updateDesktopLyricsStyle();
+        });
+        
+        opacitySliderContainer.appendChild(opacitySlider);
+        opacitySliderContainer.appendChild(opacityValue);
+        
+        opacityItem.appendChild(opacityTitle);
+        opacityItem.appendChild(opacitySliderContainer);
+        
+        settingsPanel.appendChild(fontSizeItem);
+        settingsPanel.appendChild(opacityItem);
+        
+        this.lyricsContainer.appendChild(settingsPanel);
+        this.desktopLyricsSettings = settingsPanel;
+        
+        // 显示/隐藏设置面板
+        this.desktopLyricsToggle.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            settingsPanel.classList.toggle('visible');
+        });
+        
+        // 点击其他地方关闭设置面板
+        document.addEventListener('click', (e) => {
+            if (!settingsPanel.contains(e.target) && e.target !== this.desktopLyricsToggle) {
+                settingsPanel.classList.remove('visible');
+            }
+        });
+
+        // 监听来自桌面歌词窗口的样式更新
+        if (this.ipcRenderer) {
+            this.ipcRenderer.on('desktop-lyrics-style-changed', (_, style) => {
+                // 更新设置到SettingManager
+                if (style.currentLineSize) {
+                    this.settingManager.setSetting('desktopLyricsFontSize', style.currentLineSize.toString());
+                    if (fontSizeSlider) fontSizeSlider.value = style.currentLineSize;
+                    if (fontSizeValue) fontSizeValue.textContent = `${style.currentLineSize}px`;
+                }
+                
+                if (style.backgroundColor) {
+                    const opacity = parseInt(style.backgroundColor.match(/[^,]+(?=\))/)[0] * 100);
+                    this.settingManager.setSetting('desktopLyricsOpacity', opacity.toString());
+                    if (opacitySlider) opacitySlider.value = opacity;
+                    if (opacityValue) opacityValue.textContent = `${opacity}%`;
+                }
+                
+                // 更新桌面歌词样式
+                this.updateDesktopLyricsStyle();
+            });
+            
+            // 监听背景颜色选择器显示请求
+            this.ipcRenderer.on('show-lyrics-bg-color-picker', () => {
+                this.desktopLyricsSettings.classList.add('visible');
+                // 聚焦不透明度滑块
+                const opacitySlider = this.desktopLyricsSettings.querySelector('input[type="range"]');
+                if (opacitySlider) {
+                    opacitySlider.focus();
+                }
+            });
+        }
+    }
+    
+    // 更新桌面歌词按钮状态
+    updateDesktopLyricsButton() {
+        if (this.desktopLyricsToggle) {
+            if (this.desktopLyricsEnabled) {
+                this.desktopLyricsToggle.classList.add('active');
+                this.desktopLyricsToggle.title = '关闭桌面歌词';
+            } else {
+                this.desktopLyricsToggle.classList.remove('active');
+                this.desktopLyricsToggle.title = '打开桌面歌词';
+            }
+        }
+    }
+    
+    // 切换桌面歌词
+    toggleDesktopLyrics() {
+        if (!this.ipcRenderer) return;
+        
+        this.desktopLyricsEnabled = !this.desktopLyricsEnabled;
+        this.settingManager.setSetting('desktopLyricsEnabled', this.desktopLyricsEnabled.toString());
+        this.updateDesktopLyricsButton();
+        
+        // 通知主进程切换桌面歌词
+        this.ipcRenderer.send('toggle-desktop-lyrics', this.desktopLyricsEnabled);
+        
+        // 如果启用了桌面歌词，立即同步当前状态
+        if (this.desktopLyricsEnabled) {
+            this.updateDesktopLyricsStyle();
+            this.syncDesktopLyrics();
+        }
+    }
+    
+    // 更新桌面歌词样式
+    updateDesktopLyricsStyle() {
+        if (!this.ipcRenderer || !this.desktopLyricsEnabled) return;
+        
+        const fontSize = this.settingManager.getSetting('desktopLyricsFontSize') || '28';
+        const opacity = this.settingManager.getSetting('desktopLyricsOpacity') || '50';
+        
+        // 获取当前主题颜色
+        const root = document.documentElement;
+        const style = getComputedStyle(root);
+        const theme1 = style.getPropertyValue('--theme-1').trim();
+        const theme2 = style.getPropertyValue('--theme-2').trim();
+        
+        // 计算背景色
+        const bgOpacity = parseInt(opacity) / 100;
+        const backgroundColor = `rgba(0, 0, 0, ${bgOpacity})`;
+        
+        // 获取字体
+        const fontFamily = this.settingManager.getSetting('fontFamilyCustom') || 
+                           this.settingManager.getSetting('fontFamilyFallback') ||
+                           '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+        
+        // 发送样式到桌面歌词窗口
+        this.ipcRenderer.send('update-lyrics-style', {
+            currentLineSize: parseInt(fontSize),
+            nextLineSize: Math.max(parseInt(fontSize) - 4, 14),
+            theme1: theme1,
+            theme2: theme2,
+            backgroundColor: backgroundColor,
+            fontFamily: fontFamily
+        });
+    }
+    
+    // 同步桌面歌词显示
+    syncDesktopLyrics() {
+        if (!this.ipcRenderer || !this.desktopLyricsEnabled) return;
+        
+        // 获取当前激活的歌词行
+        let currentLine = "等待播放...";
+        let nextLine = "";
+        
+        // 找到当前激活的行
+        if (this.activeLineIndex !== -1 && this.activeLineIndex < this.parsedData.length) {
+            const lyricsData = this.parsedData.filter(data => data.type === "lyric");
+            
+            if (this.activeLineIndex < lyricsData.length) {
+                const activeLineData = lyricsData[this.activeLineIndex];
+                if (activeLineData) {
+                    const lineText = activeLineData.chars.map(char => char.text).join('');
+                    currentLine = lineText || "等待播放...";
+                    
+                    // 找下一行
+                    if (this.activeLineIndex + 1 < lyricsData.length) {
+                        const nextData = lyricsData[this.activeLineIndex + 1];
+                        if (nextData) {
+                            nextLine = nextData.chars.map(char => char.text).join('');
+                        }
+                    }
+                }
+            }
+        }
+        
+        // 发送歌词数据到桌面歌词窗口 - 无论窗口状态
+        this.ipcRenderer.send('update-desktop-lyrics', {
+            currentLine: currentLine,
+            nextLine: nextLine,
+            songInfo: this.currentSongInfo,
+            currentTime: this.audio.currentTime,
+            duration: this.audio.duration,
+            isPlaying: !this.audio.paused
+        });
+    }
+
+    // 设置当前播放的歌曲信息
+    setCurrentSongInfo(songInfo) {
+        this.currentSongInfo = songInfo;
+        // 如果桌面歌词已启用，同步信息
+        if (this.desktopLyricsEnabled) {
+            this.syncDesktopLyrics();
+        }
+    }
+
+    // 添加启动后台同步的方法
+    startBackgroundSync() {
+        // 如果已经有同步定时器，先停止它
+        this.stopBackgroundSync();
+        
+        // 创建新的定时器，每秒同步一次歌词
+        this.backgroundSyncInterval = setInterval(() => {
+            if (this.desktopLyricsEnabled) {
+                this.syncDesktopLyrics();
+            }
+        }, 1000);
+    }
+
+    // 停止后台同步
+    stopBackgroundSync() {
+        if (this.backgroundSyncInterval) {
+            clearInterval(this.backgroundSyncInterval);
+            this.backgroundSyncInterval = null;
+        }
+    }
+
+    // 当组件销毁时清理定时器
+    destroy() {
+        this.stop();
+        this.stopBackgroundSync();
+        
+        // 清理其他资源...
+        if (this.resizeObserver) {
+            this.resizeObserver.disconnect();
         }
     }
 }

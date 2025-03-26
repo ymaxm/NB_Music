@@ -39,16 +39,49 @@
   flex: 1;
   min-width: 0;
   padding-right: 8px;
+  transition: transform var(--transition-medium) var(--animation-timing);
+}
+
+.song:hover .info {
+  transform: translateX(3px);
 }
 
 .song .name {
   font-size: 14px;
   font-weight: 500;
+  transition: color var(--transition-medium) ease;
+  position: relative;
+  display: inline-block;
+}
+
+.song:hover .name {
+  color: var(--theme-2);
+}
+
+/* 添加歌曲名称悬停指示 */
+.song .name::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: linear-gradient(90deg, var(--theme-1), var(--theme-2));
+  transition: width var(--transition-medium) var(--animation-timing-bounce);
+}
+
+.song:hover .name::after {
+  width: 100%;
 }
 
 .song .artist {
   font-size: 12px;
   color: var(--rgba-6);
+  transition: color var(--transition-medium) ease;
+}
+
+.song:hover .artist {
+  color: var(--rgba-5);
 }
 
 .song .controls {
@@ -56,11 +89,49 @@
   gap: 5px;
   opacity: 0;
   flex-shrink: 0;
-  transition: opacity 0.2s ease;
+  transition: opacity var(--transition-medium) ease, 
+              width var(--transition-medium) var(--animation-timing-bounce);
+  width: 0;
+  overflow: hidden;
 }
 
 .song:hover .controls {
   opacity: 1;
+  width: 37px;
+  animation: controlsAppear 0.3s var(--animation-timing-bounce) forwards;
+}
+
+@keyframes controlsAppear {
+  from {
+    transform: translateX(-10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* 控制按钮互动效果 */
+.song .controls i {
+  transition: transform var(--transition-fast) var(--animation-timing-bounce),
+              color var(--transition-fast) ease;
+}
+
+.song .controls i:hover {
+  transform: scale(1.2);
+}
+
+.song .controls i:active {
+  transform: scale(0.9);
+}
+
+.song .controls .love i:hover {
+  color: #ff3b66;
+}
+
+.song .controls .delete i:hover {
+  color: #ff3b30;
 }
 
 /* 播放列表中的歌曲动画 */
@@ -72,11 +143,12 @@
   position: relative;
   will-change: transform, opacity, max-height;
   z-index: 1;
+  border-radius: 8px;
 }
 
 #playing-list .song.adding {
   opacity: 0;
-  transform: scale(0.95);
+  transform: translateY(20px) scale(0.95);
   max-height: 0;
   margin: 0;
   padding: 0;
@@ -147,99 +219,27 @@
   }
 }
 
-/* 拖动排序相关样式 */
-.song.draggable {
-  user-select: none;
-  cursor: grab;
+/* 添加悬停效果 */
+#playing-list .song {
+  transition: background-color var(--transition-fast) ease,
+              transform var(--transition-medium) var(--animation-timing-bounce);
 }
 
-.song.draggable::before {
-  content: '≡';
-  position: absolute;
-  left: -18px;
-  color: var(--rgba-6);
-  font-size: 16px;
-  opacity: 0;
-  transition: opacity 0.2s cubic-bezier(0.19, 1, 0.22, 1);
-}
-
-.song.draggable:hover::before {
-  opacity: 0.7;
-}
-
-.song.dragging {
-  cursor: grabbing;
-  z-index: 100;
-  animation: dragStart 0.3s forwards cubic-bezier(0.34, 1.56, 0.64, 1);
+#playing-list .song:hover {
   background-color: var(--rgba-16);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15), 0 5px 15px rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(10px) saturate(1.5);
-  -webkit-backdrop-filter: blur(10px) saturate(1.5);
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: var(--elevation-1);
 }
 
-@keyframes dragStart {
-  0% {
-    transform: scale(1) translateZ(0);
-  }
-
-  50% {
-    transform: scale(1.02) translateZ(0);
-  }
-
-  100% {
-    transform: scale(1.01) translateZ(0);
-  }
+#playing-list .song:active {
+  transform: translateY(0) scale(0.99);
 }
 
-.drag-placeholder {
-  background-color: var(--rgba-17);
-  border: 2px dashed var(--rgba-13);
-  border-radius: 8px;
-  height: 64px;
-  margin: 4px 0;
-  animation: placeholderPulse 1.5s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-@keyframes placeholderPulse {
-  from {
-    opacity: 0.7;
-    transform: scale(0.99);
-  }
-
-  to {
-    opacity: 0.9;
-    transform: scale(1);
-  }
-}
-
-.song-drop-indicator {
-  height: 3px;
-  background: linear-gradient(90deg, var(--theme-1), var(--theme-2));
-  border-radius: 3px;
-  margin: 0;
-  transform: scaleX(0);
-  transition: transform 0.3s cubic-bezier(0.19, 1, 0.22, 1);
-}
-
-.song-drop-indicator.active {
-  transform: scaleX(1);
-}
-
-/* 苹果风格的拖动反馈 */
-.song-drag-feedback {
-  position: fixed;
-  pointer-events: none;
-  z-index: 1000;
-  width: max-content;
-  transform-origin: left center;
-  transition: transform 0.1s cubic-bezier(0.19, 1, 0.22, 1);
-  filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.2));
-}
-
-/* 闪光效果 */
-.flash {
-  animation: flashRow 0.8s ease-out;
+/* 点击波纹效果 */
+#playing-list .song {
   position: relative;
+  overflow: hidden;
+}
   overflow: hidden;
 }
 

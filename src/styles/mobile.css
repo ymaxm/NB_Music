@@ -174,20 +174,19 @@
         pointer-events: auto; /* 确保可点击 */
     }
 
-    .page-indicator .dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: var(--text);
-        opacity: 0.3;
-        cursor: pointer;
-        transition: all 0.3s ease;
+    /* 移动设备上桌面歌词按钮位置调整 */
+    body.mobile-view .desktop-lyrics-toggle {
+        top: auto;
+        bottom: 70px;
+        right: 20px;
     }
 
-    .page-indicator .dot.active {
-        opacity: 0.8;
-        width: 16px;
-        border-radius: 4px;
+    /* 移动设备上桌面歌词设置面板调整 */
+    body.mobile-view .desktop-lyrics-settings {
+        top: auto;
+        bottom: 110px;
+        right: 20px;
+        width: 220px;
     }
 
     /* 滑动提示动画 */

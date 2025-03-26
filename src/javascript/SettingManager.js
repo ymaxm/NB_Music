@@ -5,7 +5,7 @@ class SettingManager {
     static DEFAULT_PRIMARY_COLOR = "#ad6eca";
     static DEFAULT_SECONDARY_COLOR = "#3b91d8";
     static DEFAULT_MICA_OPACITY = 0.5;
-    static DEFAULT_FONT_FAMILY_CUSTOM = "";
+    static DEFAULT_FONT_FAMILY_CUSTOM = "HarmonyOS_Sans";
     static DEFAULT_FONT_FAMILY_FALLBACK = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell";
 
     constructor() {
@@ -24,7 +24,8 @@ class SettingManager {
             fontFamilyFallback: SettingManager.DEFAULT_FONT_FAMILY_FALLBACK,
             videoQuality: 64, // 新增：背景视频清晰度，默认720P
             hideSidebar: false,
-            hideTitbar: false
+            hideTitbar: false,
+            devToolsEnabled: false // 新增：开发者工具设置，默认禁用
         };
         this.listeners = new Map();
         this.STORAGE_KEY = "app_settings";
