@@ -2,9 +2,13 @@ const QRCode = require('qrcode');
 const axios = require('axios');
 const { ipcRenderer } = require('electron');
 const md5 = require('md5');
+const { spawn, exec } = require("child_process");
+const path = require("path");
+const fs = require("fs");
+const open = require("open");
 
 class LoginManager {
-    constructor() {
+    constructor(uiManager) {
         this.qrcodeKey = null;
         this.pollTimer = null;
         this.loginDialog = document.getElementById('loginDialog');
@@ -13,6 +17,16 @@ class LoginManager {
         this.loginBtn = document.querySelector('.login-btn');
         this.refreshBtn = document.getElementById('refreshQRCode');
         this.cancelBtn = document.getElementById('cancelLogin');
+        this.uiManager = uiManager;
+
+        this.isLogin = false;
+        this.showAccountOptions = false;
+        this.cookie = '';
+
+        ipcRenderer.send('get-cookies');
+        ipcRenderer.once('get-cookies-success', (event, cookie) => {
+            this.cookie = cookie;
+        });
 
         this.bindEvents();
         this.updateLoginStatus();
@@ -26,14 +40,17 @@ class LoginManager {
             const response = await axios.get('https://api.bilibili.com/x/web-interface/nav');
 
             if (response.data.code === 0) {
+                this.isLogin = true;
                 const userData = response.data.data;
                 const username = userData.uname;
                 const mid = userData.mid;
+
+
+                document.getElementById('account-home').addEventListener('click', () => open('https://space.bilibili.com/' + mid));
                 
                 if (this.loginBtn) {
                     // 先更新文本
                     this.loginBtn.innerHTML = `<img class="user-avatar" alt="用户头像" /> <span>${username}</span>`;
-                    this.loginBtn.style = '-webkit-app-region: drag';
                     
                     // 异步获取并添加用户头像
                     if (mid) {
@@ -138,11 +155,38 @@ class LoginManager {
         const loginBtn = document.querySelector('.login-btn');
         const loginDialog = document.getElementById('loginDialog');
         const refreshBtn = document.getElementById('refreshQRCode');
+        const reOpenBrowserBtn = document.getElementById('reOpenBrowser');
         const cancelBtn = document.getElementById('cancelLogin');
+        const canelBtn2 = document.getElementById('cancelLogin2');
+        const switchBrowser = document.getElementById('switchBrowser');
+        const switchQrcode = document.getElementById('switchQrcode');
+        const logoutBtn = document.getElementById('account-logout');
 
         loginBtn.addEventListener('click', () => this.showLoginDialog());
         refreshBtn.addEventListener('click', () => this.generateQRCode());
+        reOpenBrowserBtn.addEventListener('click', () => this.browserLogin());
         cancelBtn.addEventListener('click', () => this.hideLoginDialog());
+        canelBtn2.addEventListener('click', () => this.hideLoginDialog());
+        switchBrowser.addEventListener('click', () => this.switchLoginMethod('browser'));
+        switchQrcode.addEventListener('click', () => this.switchLoginMethod('qrcode'));
+        logoutBtn.addEventListener('click', () => this.logout());
+
+        // 判断系统是否为Windows
+        if (process.platform === 'win32') {
+            switchBrowser.classList.remove('hide');
+        }
+
+        document.addEventListener('click', () => {
+            const optionsContainer = document.querySelector('.account-options-container');
+            if (optionsContainer.classList.contains('show')) {
+                if (this.showAccountOptions) {
+                    this.showAccountOptions = false;
+                    optionsContainer.classList.remove("show");
+                } else {
+                    this.showAccountOptions = true;
+                }
+            }
+        });
     }
 
     async generateQRCode() {
@@ -201,14 +245,9 @@ class LoginManager {
     
                         // 发送给主进程设置
                         ipcRenderer.send('login-success', { cookies });
-                        
-                        // 监听主进程响应
-                        ipcRenderer.once('cookies-set', () => {
-                            this.hideLoginDialog();
-                            location.reload(); // 刷新页面应用新cookie
-                        });
-                        
+
                         ipcRenderer.once('cookies-set-error', (_, error) => {
+                            this.uiManager.showNotification('登录失败', 'error');
                             statusElem.textContent = `登录失败: ${error}`;
                             console.error('登录失败:', error);
                             setTimeout(() => this.hideLoginDialog(), 2000);
@@ -220,11 +259,11 @@ class LoginManager {
                         this.clearPolling();
                         break;
     
-                    case 86090: // 等待扫码
+                    case 86101: // 等待扫码
                         statusElem.textContent = '请使用哔哩哔哩客户端扫码登录';
                         break;
     
-                    case 86101: // 已扫码等待确认
+                    case 86090: // 已扫码等待确认
                         statusElem.textContent = '请在手机上确认登录';
                         break;
                 }
@@ -248,13 +287,25 @@ class LoginManager {
     }
 
     showLoginDialog() {
-        document.getElementById('loginDialog').classList.remove('hide');
-        this.generateQRCode();
+        if (this.isLogin) {
+            document.querySelector(".account-options-container").classList.add("show");
+        } else {
+            ipcRenderer.once('cookies-set', () => {
+                this.hideLoginDialog();
+                location.reload(); // 刷新页面应用新cookie
+            });
+
+            document.getElementById("loginDialog").classList.remove("hide");
+            this.generateQRCode();
+        }
     }
 
     hideLoginDialog() {
         document.getElementById('loginDialog').classList.add('hide');
-        this.clearPolling();
+
+        ipcRenderer.send('close-browser-auth-server');
+        document.getElementById('browserLogin').classList.add('hide');
+        document.getElementById('qrcodeLogin').classList.remove('hide');
     }
 
     // 初始化自动刷新cookie
@@ -367,40 +418,40 @@ class LoginManager {
         try {
             // 获取当前的CSRF Token
             const biliJct = this.getCookie('bili_jct');
-            
+
             if (!biliJct) {
                 throw new Error('获取bili_jct失败');
             }
-            
+
             // 构建请求参数
             const params = new URLSearchParams();
             params.append('csrf', biliJct);
             params.append('refresh_csrf', refreshCsrf);
             params.append('source', 'main_web');
             params.append('refresh_token', refreshToken);
-            
+
             // 发送请求
             const response = await axios.post(
                 'https://passport.bilibili.com/x/passport-login/web/cookie/refresh',
                 params,
                 { withCredentials: true }
             );
-            
+
             if (response.data.code === 0) {
                 // 保存新的refresh_token
                 const newRefreshToken = response.data.data.refresh_token;
                 localStorage.setItem('ac_time_value', newRefreshToken);
-                
+
                 // 获取新的CSRF Token（从cookie中获取）
                 const newCsrf = this.getCookie('bili_jct');
-                
+
                 return {
                     success: true,
                     newRefreshToken,
                     newCsrf
                 };
             }
-            
+
             throw new Error(response.data.message || '刷新Cookie失败');
         } catch (error) {
             console.error('刷新Cookie失败:', error);
@@ -436,10 +487,98 @@ class LoginManager {
     
     // 获取cookie值的辅助方法
     getCookie(name) {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
+        const value = `;${this.cookie}`;
+        const parts = value.split(`;${name}=`);
         if (parts.length === 2) return parts.pop().split(';').shift();
         return null;
+    }
+
+    // 切换登录方式
+    switchLoginMethod(option) {
+        if (option === 'browser') {
+            this.clearPolling();
+            document.getElementById('qrcodeLogin').classList.add('hide');
+            document.getElementById('browserLogin').classList.remove('hide');
+
+            this.browserLogin();
+        } else if (option === 'qrcode') {
+            ipcRenderer.send('close-browser-auth-server');
+            this.generateQRCode();
+
+            document.getElementById('browserLogin').classList.add('hide');
+            document.getElementById('qrcodeLogin').classList.remove('hide');
+        }
+    }
+
+    logout() {
+        ipcRenderer.once('logout-success', () => {
+            this.uiManager.showNotification('退出登录成功', 'info');
+            location.reload();
+        });
+
+        const loginMode = this.getCookie('nbmusic_loginmode');
+
+        if (loginMode === 'qrcode') {
+            this.getCookie('bili_jct').then((biliJct) => {
+                axios.post(
+                    'https://passport.bilibili.com/login/exit/v2',
+                    'biliCSRF=' + biliJct,
+                    { headers: {'Content-Type': 'application/x-www-form-urlencoded'} }
+                ).then((response) => {
+                    if (response.data.code !== 0) {
+                        console.error('退出登录失败:', response.data.message);
+                        this.uiManager.showNotification('退出登录失败', 'error');
+                        return;
+                    }
+
+                    ipcRenderer.send('logout');
+                }).catch((error) => {
+                    if (error.response) {
+                        console.error('退出登录失败：', error.response.data.message);
+                    } else if (error.request) {
+                        console.error('退出登录失败：服务器没有响应');
+                    } else {
+                        console.error('退出登录失败：', error.message);
+                    }
+                    this.uiManager.showNotification('退出登录失败', 'error');
+                });
+            });
+        } else {
+            ipcRenderer.send('logout');
+        }
+    }
+
+    browserLogin() {
+        let command = spawn('certutil', ['-user', '-addstore', 'Root', path.join(__dirname, '..', '..', 'ssl', 'ca.crt')]);
+        command.on('close', (code) => {
+            if (code === 0) {
+                fs.readFile('C:\\Windows\\System32\\drivers\\etc\\hosts', 'utf8', (err, data) => {
+                    if (err) {
+                        console.error('读取Hosts时出错: ' + err);
+                        this.uiManager.showNotification('读取Hosts时出错: ' + err, 'error');
+                        return;
+                    }
+
+                    // 检查文件内容中是否包含指定的字符串
+                    if (!data.includes('127.0.0.1 nbmusic-login.bilibili.com')) {
+                        // 使用mshta提权
+                        exec('C:\\Windows\\System32\\mshta.exe ' +
+                            'vbscript:createobject("shell.application").shellexecute("' +
+                            'C:\\Windows\\System32\\cmd.exe",' +
+                            '"/c echo 127.0.0.1 nbmusic-login.bilibili.com>>C:\\Windows\\system32\\drivers\\etc\\hosts",' +
+                            '"","runas",0)(close)'
+                        );
+                    }
+
+                    open('https://nbmusic-login.bilibili.com:62687');
+                });
+            } else {
+                console.error('导入根证书失败: ' + code);
+                this.uiManager.showNotification('导入根证书失败: ' + code, 'error');
+            }
+        });
+
+        ipcRenderer.send('start-browser-auth-server');
     }
 }
 
