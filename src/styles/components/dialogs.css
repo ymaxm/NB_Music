@@ -7,24 +7,39 @@
   height: 100%;
   z-index: 1000;
   backdrop-filter: blur(20px);
+  background-color: rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  transition: opacity 0.4s var(--animation-timing);
 }
 
-/* 对话框基础样式 */
+.dialog-bg:not(.hide) {
+  opacity: 1;
+}
+
+/* 对话框基础样式增强 */
 .dialog {
   position: fixed;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -55%);
+  opacity: 0;
   background: var(--bg70);
   border-radius: 16px;
   padding: 24px;
   min-width: 400px;
-  box-shadow: 0 8px 32px var(--sd);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
   z-index: 1001;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--border-1);
   background: var(--mica);
+  transition: all 0.4s var(--animation-timing-bounce);
+  will-change: transform, opacity;
+}
+
+.dialog-bg:not(.hide) .dialog {
+  opacity: 1;
+  transform: translate(-50%, -50%);
 }
 
 /* 对话框内容需要在遮罩层之上 */
@@ -37,49 +52,34 @@
   display: none;
 }
 
-/* 对话框标题 */
-.dialog h2 {
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--text);
-  margin-bottom: 24px;
-  text-align: center;
-}
-
-/* 对话框内容区域 */
-.dialog-content {
-  margin-bottom: 24px;
-}
-
-.input-group {
+/* 对话框头部增强 */
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-1);
 }
 
-.input-group:last-child {
-  margin-bottom: 0;
+.dialog-header h2 {
+  margin: 0;
+  background: linear-gradient(90deg, var(--theme-1), var(--theme-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-size: 1.5rem;
 }
 
-.input-group>input,
-.input-group>div {
-  width: 100%;
-}
-
-/* 输入标签 */
-label {
-  display: block;
-  margin-bottom: 8px;
-  color: var(--text);
-  font-size: 14px;
-}
-
-
-/* 当前歌曲标题显示 */
-#currentSongTitle {
-  padding: 12px;
-  background: var(--bg50);
-  border-radius: 8px;
-  margin-top: 4px;
-  color: var(--text);
+/* 关闭按钮增强 */
+.close-btn {
+  background: transparent;
+  border: none;
+  color: var(--rgba-6);
+  cursor: pointer;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
   font-size: 14px;
 }
 
@@ -165,27 +165,6 @@ select option:checked {
 select:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-/* 二维码容器样式 */
-.qrcode-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  padding: 24px;
-}
-
-#qrcode {
-  padding: 12px;
-  background: white;
-  border-radius: 8px;
-}
-
-.qrcode-status {
-  font-size: 14px;
-  color: var(--text);
-  text-align: center;
 }
 
 /* 更新容器 - 重新设计 */

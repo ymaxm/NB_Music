@@ -151,17 +151,31 @@
     </div>
   </div>
   <div class="dialog-bg hide" id="loginDialog">
-    <div class="dialog">
+    <div class="dialog" id="qrcodeLogin">
       <h2>扫码登录</h2>
       <div class="dialog-content">
         <div class="qrcode-container">
           <canvas id="qrcode"></canvas>
-          <div class="qrcode-status">请使用哔哩哔哩客户端扫码登录</div>
+          <div class="login-tips">请使用哔哩哔哩客户端扫码登录</div>
+          <a href="#" id="switchBrowser" class="switch-method hide">使用网页登录</a>
         </div>
       </div>
       <div class="dialog-footer">
         <button id="refreshQRCode" class="dialog-btn dialog-btn-secondary">刷新</button>
         <button id="cancelLogin" class="dialog-btn dialog-btn-primary">取消</button>
+      </div>
+    </div>
+    <div class="dialog hide" id="browserLogin">
+      <h2>网页登录</h2>
+      <div class="dialog-content">
+        <div class="login-tips">NB Music将打开浏览器进行进一步授权</div>
+        <div class="login-tips">如果出现根证书导入窗口，请点击“是”以导入根证书</div>
+        <div class="login-tips" style="margin-bottom: 7px;">NB Music不会存储您的账号信息，所有认证均通过官方接口完成</div>
+        <a href="#" id="switchQrcode" class="switch-method">使用扫码登录</a>
+      </div>
+      <div class="dialog-footer">
+        <button id="reOpenBrowser" class="dialog-btn dialog-btn-secondary">重新打开授权页面</button>
+        <button id="cancelLogin2" class="dialog-btn dialog-btn-primary">取消</button>
       </div>
     </div>
   </div>
@@ -299,7 +313,7 @@
       </list>
       <div class="playing-list" style="display: flex; flex-direction: column; min-height: 0; max-height: 100%">
         <div class="listname" style="padding: 2px 20px">
-          <div id="listname">默认歌单</div>
+          <div id="listname" style="margin-bottom: 3px;">默认歌单</div>
           <div class="controls">
             <div class="playmode">
               <i class="bi bi-repeat"></i>
@@ -629,6 +643,24 @@
                   </nav>
                 </div>
               </div>
+
+              <!-- 新增桌面歌词设置 -->
+              <div class="setting-item">
+                <div class="setting-info">
+                  <i class="bi bi-display"></i>
+                  <div class="words">
+                    <div class="setting-name">桌面歌词</div>
+                    <div class="setting-descrition">在桌面显示独立歌词窗口</div>
+                  </div>
+                </div>
+                <div class="setting-value">
+                  <nav data-nav-id="nav-desktop-lyrics">
+                    <a data-key="desktopLyricsEnabled" data-value="true">开启</a>
+                    <a class="active" data-key="desktopLyricsEnabled" data-value="false">关闭</a>
+                  </nav>
+                </div>
+              </div>
+
               <div class="setting-item">
                 <div class="setting-info">
                   <i class="bi bi-music-note"></i>
@@ -789,6 +821,12 @@
         <span>设置</span>
       </a>
     </div>
+
+    <div class="account-options-container">
+      <div class="option" id="account-home">B站主页</div>
+      <div class="option" id="account-logout">退出登录</div>
+    </div>
+  </div>
 
 </body>
 <script src="./script.js"></script>

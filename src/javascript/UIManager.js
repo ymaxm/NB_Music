@@ -318,6 +318,33 @@ class UIManager {
             this.renderPlaylist();
         });
 
+        // 桌面歌词相关设置监听
+        this.settingManager.addListener("desktopLyricsEnabled", (newValue) => {
+            if (this.lyricsPlayer) {
+                if (newValue === "true") {
+                    if (!this.lyricsPlayer.desktopLyricsEnabled) {
+                        this.lyricsPlayer.toggleDesktopLyrics();
+                    }
+                } else {
+                    if (this.lyricsPlayer.desktopLyricsEnabled) {
+                        this.lyricsPlayer.toggleDesktopLyrics();
+                    }
+                }
+            }
+        });
+        
+        this.settingManager.addListener("desktopLyricsFontSize", (newValue) => {
+            if (this.lyricsPlayer && this.lyricsPlayer.desktopLyricsEnabled) {
+                this.lyricsPlayer.updateDesktopLyricsStyle();
+            }
+        });
+        
+        this.settingManager.addListener("desktopLyricsOpacity", (newValue) => {
+            if (this.lyricsPlayer && this.lyricsPlayer.desktopLyricsEnabled) {
+                this.lyricsPlayer.updateDesktopLyricsStyle();
+            }
+        });
+
         const settingContainer = document.querySelector(".content>.setting");
         settingContainer.addEventListener("click", (e) => {
             const setting = e.target;
@@ -634,6 +661,23 @@ class UIManager {
         document.querySelector(".listname .controls .rename").addEventListener("click", (e) => {
             e.stopPropagation();
             this.playlistManager.renamePlaylist();
+        });
+
+        // 监听窗口最小化/恢复事件
+        ipcRenderer.on("window-minimized", () => {
+            // 通知歌词播放器窗口已最小化
+            if (this.audioPlayer && this.audioPlayer.lyricsPlayer) {
+                // 确保最小化时同步一次当前歌词
+                this.audioPlayer.lyricsPlayer.syncDesktopLyrics();
+            }
+        });
+
+        ipcRenderer.on("window-restored", () => {
+            // 通知歌词播放器窗口已恢复
+            if (this.audioPlayer && this.audioPlayer.lyricsPlayer) {
+                // 恢复时同步一次当前歌词
+                this.audioPlayer.lyricsPlayer.syncDesktopLyrics();
+            }
         });
     }
 
@@ -1123,6 +1167,12 @@ class UIManager {
                 isPlaying,
                 song
             });
+            
+            // 同步更新到桌面歌词 - 确保托盘更新时也更新桌面歌词
+            if (this.audioPlayer && this.audioPlayer.lyricsPlayer && 
+                this.audioPlayer.lyricsPlayer.desktopLyricsEnabled) {
+                this.audioPlayer.lyricsPlayer.syncDesktopLyrics();
+            }
         } catch (error) {
             console.error("更新托盘信息失败:", error);
         }
