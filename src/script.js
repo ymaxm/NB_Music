@@ -1,5 +1,5 @@
 "use strict";
-const { ipcRenderer } = require("electron");
+const { ipcRenderer, shell } = require("electron");
 const AudioPlayer = require("./javascript/AudioPlayer.js");
 const LyricsPlayer = require("./javascript/LyricsPlayer.js");
 const UIManager = require("./javascript/UIManager.js");
@@ -14,6 +14,7 @@ const UpdateManager = require("./javascript/UpdateManager.js");
 const LocalImportManager = require("./javascript/LocalImportManager");
 const VideoPlayerManager = require("./javascript/VideoPlayerManager");
 const EffectManager = require("./javascript/EffectManager.js");
+const VolumeControlManager = require("./javascript/VolumeControlManager.js");
 
 class App {
     constructor() {
@@ -36,6 +37,7 @@ class App {
             this.settingManager = new SettingManager();
             this.audioPlayer = new AudioPlayer(null); // 暂时传入null
             this.lyricsPlayer = new LyricsPlayer("暂无歌词，尽情欣赏音乐", this.audioPlayer.audio, this.settingManager);
+            this.volumeControl = new VolumeControlManager(this.settingManager, this.audioPlayer);
 
             // 2. 创建其他必要组件
             this.playlistManager = new PlaylistManager(this.audioPlayer, this.lyricsPlayer, null); // uiManager临时为null

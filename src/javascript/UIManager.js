@@ -11,10 +11,15 @@ class UIManager {
         this.isMaximized = false;
         this.settingManager = settingManager;
         this.minimizeBtn = document.getElementById("maximize");
-
-        // 设置 AudioPlayer 的 settingManager
+    
+        // 确保设置管理器先初始化
         if (this.audioPlayer) {
             this.audioPlayer.setSettingManager(settingManager);
+            // 添加延迟确保设置生效
+            setTimeout(() => {
+                const volume = settingManager.getSetting('volume') / 100;
+                this.audioPlayer.audio.volume = volume;
+            }, 100);
         }
 
         this.initializeEvents();
@@ -379,6 +384,7 @@ class UIManager {
             const progress = (this.audioPlayer.audio.currentTime / this.audioPlayer.audio.duration) * 100;
             document.querySelector(".progress-bar-inner").style.width = `${progress}%`;
         });
+        
 
         // 播放控制按钮（使用事件委托）
         const buttonsContainer = document.querySelector(".buttons");

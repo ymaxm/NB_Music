@@ -5,7 +5,7 @@ class AudioPlayer {
         this.audio = new Audio();
         this.audio.autoplay = false;
         this.audio.loop = false;
-        this.audio.volume = 1;
+        this.audio.volume = 0; // 将由setSettingManager覆盖
         this.volumeInterval = null;
         this.settingManager = null; // 将在初始化时设置
         this.lastProgressSaveTime = 0;
@@ -82,12 +82,22 @@ class AudioPlayer {
             if ("mediaSession" in navigator) {
                 navigator.mediaSession.playbackState = "playing";
             }
-            this.isPlayRequestPending = false; // 重置请求状态
+            // 新增音量同步逻辑
+            if (this.settingManager) {
+                const currentVolume = Math.max(0, this.settingManager.getSetting('volume') / 100);
+                this.audio.volume = currentVolume;
+            }
+            this.isPlayRequestPending = false;
         });
 
         this.audio.addEventListener("pause", () => {
             if ("mediaSession" in navigator) {
                 navigator.mediaSession.playbackState = "paused";
+            }
+            // 新增音量同步逻辑
+            if (this.settingManager) {
+                const currentVolume = Math.max(0, this.settingManager.getSetting('volume') / 100);
+                this.audio.volume = currentVolume;
             }
         });
     }
@@ -108,29 +118,33 @@ class AudioPlayer {
                 this.volumeInterval = null;
             }
 
-            // 如果禁用了淡入淡出效果，直接设置音量为1并播放
-            if (!fadeEnabled) {
-                this.audio.volume = 1;
+            // 获取当前音量设置
+            const currentVolume = this.settingManager ? 
+                Math.max(0, this.settingManager.getSetting('volume') / 100) : 1;
+
+            // 如果音量为0或禁用了淡入淡出效果，直接设置音量为当前音量并播放
+            if (!fadeEnabled || currentVolume === 0) {
+                this.audio.volume = currentVolume;
                 await this.audio.play();
+                this.isPlayRequestPending = false;
                 return;
             }
 
             // 启用淡入淡出时的逻辑
-            this.audio.volume = 0.1; // 从较低的音量开始，避免完全无声
+            this.audio.volume = 0.01; // 从最低可听音量开始
             await this.audio.play();
             
             this.volumeInterval = window.setInterval(() => {
-                this.audio.volume += 0.01;
-                if (this.audio.volume >= 0.98) {
-                    this.audio.volume = 1;
+                this.audio.volume = Math.min(currentVolume, this.audio.volume + 0.01);
+                if (this.audio.volume >= currentVolume) {
                     clearInterval(this.volumeInterval);
                     this.volumeInterval = null;
+                    this.isPlayRequestPending = false;
                 }
             }, 6);
         } catch (error) {
             console.error('播放失败:', error);
             this.isPlayRequestPending = false;
-            // 尝试恢复
             if (this.uimanager) {
                 this.uimanager.showNotification('播放失败，正在重试...', 'error');
             }
@@ -153,8 +167,12 @@ class AudioPlayer {
                 this.volumeInterval = null;
             }
 
-            // 如果禁用了淡入淡出效果，直接暂停
-            if (!fadeEnabled) {
+            // 获取当前音量设置
+            const currentVolume = this.settingManager ? 
+                Math.max(0, this.settingManager.getSetting('volume') / 100) : 1;
+
+            // 如果音量为0或禁用了淡入淡出效果，直接暂停
+            if (!fadeEnabled || currentVolume === 0) {
                 this.audio.pause();
                 this.isPlayRequestPending = false;
                 return;
@@ -165,7 +183,7 @@ class AudioPlayer {
 
             // 启用淡入淡出时的逻辑
             this.volumeInterval = window.setInterval(() => {
-                this.audio.volume -= 0.01;
+                this.audio.volume = Math.max(0, this.audio.volume - 0.01);
                 if (this.audio.volume <= 0.02) {
                     this.audio.volume = 0;
                     this.audio.pause();
@@ -229,7 +247,10 @@ class AudioPlayer {
             clearInterval(this.volumeInterval);
             this.volumeInterval = null;
         }
-        this.audio.volume = 1; // 立即重置音量
+        // 使用当前音量设置而不是强制设为1
+        const currentVolume = this.settingManager ? 
+            Math.max(0, this.settingManager.getSetting('volume') / 100) : 1;
+        this.audio.volume = currentVolume;
     
         let prevIndex;
         if (this.playlistManager.playMode === 'shuffle') {
@@ -259,7 +280,10 @@ class AudioPlayer {
             clearInterval(this.volumeInterval);
             this.volumeInterval = null;
         }
-        this.audio.volume = 1; // 立即重置音量
+        // 使用当前音量设置而不是强制设为1
+        const currentVolume = this.settingManager ? 
+            Math.max(0, this.settingManager.getSetting('volume') / 100) : 1;
+        this.audio.volume = currentVolume;
     
         let nextIndex;
         if (this.playlistManager.playMode === 'shuffle') {
@@ -279,8 +303,14 @@ class AudioPlayer {
     }
 
     // 设置 settingManager 的方法
+
     setSettingManager(settingManager) {
         this.settingManager = settingManager;
+        // 当settingManager被设置时，立即更新音量
+        if (this.settingManager) {
+            const currentVolume = Math.max(0, this.settingManager.getSetting('volume') / 100);
+            this.audio.volume = currentVolume === 0 ? 0 : currentVolume;
+        }
     }
     
     // 设置 uiManager 引用
@@ -317,7 +347,10 @@ class AudioPlayer {
             clearInterval(this.volumeInterval);
             this.volumeInterval = null;
         }
-        this.audio.volume = 1;
+        // 使用当前音量设置
+        const currentVolume = this.settingManager ? 
+            Math.max(0, this.settingManager.getSetting('volume') / 100) : 1;
+        this.audio.volume = currentVolume;
     }
 }
 
