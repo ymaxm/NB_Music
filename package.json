@@ -1,6 +1,6 @@
 {
     "name": "nb_music",
-    "version": "1.0.0-Beta",
+    "version": "1.0.1-Beta",
     "description": "NB Music",
     "main": "src/main.js",
     "scripts": {
@@ -10,7 +10,8 @@
         "run": "electron .",
         "debug": "electron --inspect=5858 .",
         "debug-brk": "electron --inspect-brk=5858 .",
-        "run:clear": "electron . --clear-storage"
+        "run:clear": "electron . --clear-storage",
+        "run:no-reload": "electron . --no-reload"
     },
     "keywords": [],
     "author": {
@@ -47,13 +48,14 @@
         "jss": "^10.10.0",
         "jss-preset-default": "^10.10.0",
         "md5": "^2.3.0",
+        "open": "^7.0.0",
         "postcss": "^8.5.3",
         "puppeteer": "^24.0.0",
         "qrcode": "^1.5.4"
     },
     "build": {
         "artifactName": "${name}-v${version}-${os}-${arch}.${ext}",
-        "productName": "NB Music",
+        "productName": "NB-Music",
         "directories": {
             "output": "dist"
         },
